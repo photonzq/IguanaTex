@@ -149,7 +149,7 @@ Public Sub Hide()
     TWHide mHandle, UNUSED, UNUSED, UNUSED
 End Sub
 
-Public Sub SetResizeTarget(target As Control, parentForm As UserForm)
+Public Sub SetResizeTarget(target As Object, parentForm As Object)
     Dim backup As Control
     Set backup = parentForm.ActiveControl
     target.SetFocus
@@ -215,9 +215,9 @@ Public Property Let Text(value As String)
     End If
 End Property
 
-Public Property Get SelStart() As Integer
+Public Property Get SelStart() As Long
     If m_hSci <> 0 Then
-        SelStart = CInt(SendMessage(m_hSci, SCI_GETCURRENTPOS, 0, 0))
+        SelStart = CLng(SendMessage(m_hSci, SCI_GETCURRENTPOS, 0, 0))
     ElseIf Not m_target Is Nothing Then
         SelStart = m_target.SelStart
     Else
@@ -225,7 +225,7 @@ Public Property Get SelStart() As Integer
     End If
 End Property
 
-Public Property Let SelStart(value As Integer)
+Public Property Let SelStart(value As Long)
     If m_hSci <> 0 Then
         SendMessage m_hSci, SCI_SETCURRENTPOS, CLng(value), 0
         SendMessage m_hSci, SCI_SETSEL, CLng(value), CLng(value)
@@ -305,7 +305,7 @@ Public Sub SetFocus()
     End If
 End Sub
 
-Public Sub SetResizeTarget(target As Control, parentForm As UserForm)
+Public Sub SetResizeTarget(target As Object, parentForm As Object)
     Set m_target = target
     Set m_parentForm = parentForm
 
