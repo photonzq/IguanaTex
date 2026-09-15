@@ -339,7 +339,7 @@ Public Sub SetupScintillaEditor(ByVal hSci As Long, Optional ByVal fontSize As L
     ' 4. Line Number Margin (Margin 0)
     SendMessage hSci, SCI_SETMARGINTYPEN, 0, SC_MARGIN_NUMBER
     SendMessage hSci, SCI_SETMARGINWIDTHN, 0, 38
-    SendMessage hSci, SCI_STYLESETFONT, STYLE_LINENUMBER, "Consolas" & vbNullChar
+    SendMessageStr hSci, SCI_STYLESETFONT, STYLE_LINENUMBER, "Consolas" & vbNullChar
     SendMessage hSci, SCI_STYLESETSIZE, STYLE_LINENUMBER, 9
     SendMessage hSci, SCI_STYLESETFORE, STYLE_LINENUMBER, RGB(140, 140, 140)
     SendMessage hSci, SCI_STYLESETBACK, STYLE_LINENUMBER, RGB(245, 245, 247)

@@ -7,40 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-' Replacement for TextBox.Font
+' ==============================================================================
+' TextWindowFont: Font wrapper for Scintilla editor
+' ==============================================================================
 
 Option Explicit
 
-#If Mac Then
-Private Declare PtrSafe Function TWGetFontSize _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal b As LongLong, ByVal c As LongLong, ByVal d As LongLong) As Double
-
-Private Declare PtrSafe Function TWSetFontSize _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal value As Double, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Const UNUSED As LongLong = 0
-
-' members
-Public mHandle As LongLong
-
-' properties
-Public Property Get Size() As Double
-    Size = CCur(TWGetFontSize(mHandle, UNUSED, UNUSED, UNUSED))
-End Property
-
-Public Property Let Size(value As Double)
-    TWSetFontSize mHandle, val(value), UNUSED, UNUSED
-End Property
-
-' methods
-Public Sub Init(Handle As LongLong)
-    mHandle = Handle
-End Sub
-
-#Else
-' Windows Scintilla implementation
 #If VBA7 Then
     Private m_hSci As LongPtr
 #Else
@@ -50,9 +22,9 @@ Private m_target As Object
 Private m_size As Double
 
 #If VBA7 Then
-Public Sub InitWin(ByVal hSci As LongPtr, targetCtrl As Object)
+Public Sub InitWin(ByVal hSci As LongPtr, ByVal targetCtrl As Object)
 #Else
-Public Sub InitWin(ByVal hSci As Long, targetCtrl As Object)
+Public Sub InitWin(ByVal hSci As Long, ByVal targetCtrl As Object)
 #End If
     m_hSci = hSci
     Set m_target = targetCtrl
@@ -78,7 +50,7 @@ Public Property Get Size() As Double
     End If
 End Property
 
-Public Property Let Size(value As Double)
+Public Property Let Size(ByVal value As Double)
     m_size = value
     If m_hSci <> 0 Then
         SetupScintillaEditor m_hSci, CLng(value)
@@ -89,5 +61,3 @@ Public Property Let Size(value As Double)
         On Error GoTo 0
     End If
 End Property
-
-#End If

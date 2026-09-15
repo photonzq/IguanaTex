@@ -7,170 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-' Replacement for TextBox
+' ==============================================================================
+' TextWindow: Windows Scintilla Editor Host
+' Replaces standard MSForms.TextBox with Scintilla 5 + Lexilla
+' ==============================================================================
 
 Option Explicit
-
-#If Mac Then
-Private Declare PtrSafe Function TWInit _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   () As LongLong
-
-Private Declare PtrSafe Function TWTerm _
- Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-(ByVal Handle As LongLong, ByVal b As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWSetResizeTarget _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal b As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWResize _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal b As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWShow _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal b As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWHide _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal b As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWFocus _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal b As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWGetByteLength _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal b As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWGetBytes _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal buffer As LongPtr, ByVal length As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWSetBytes _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal data As LongPtr, ByVal length As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWGetSelStart _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal b As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWSetSelStart _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal value As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWGetWordWrap _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal b As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Declare PtrSafe Function TWSetWordWrap _
-    Lib "/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib" _
-   (ByVal Handle As LongLong, ByVal value As LongLong, ByVal c As LongLong, ByVal d As LongLong) As LongLong
-
-Private Const UNUSED As LongLong = 0
-
-' members
-Private mHandle As LongLong
-Private mFont As New TextWindowFont
-
-' properties
-Public Property Get Font() As TextWindowFont
-    Set Font = mFont
-End Property
-
-Public Property Get Text() As String
-    Dim length As LongLong
-    length = TWGetByteLength(mHandle, UNUSED, UNUSED, UNUSED)
-    
-    If length <= 0 Then
-        Text = ""
-        Exit Property
-    End If
-
-    Dim bytes() As Byte
-    Dim usedLength As LongLong
-    ReDim bytes(CLng(length - 1))
-    usedLength = TWGetBytes(mHandle, VarPtr(bytes(0)), length, UNUSED)
-
-    If usedLength <= 0 Then
-        Text = ""
-        Exit Property
-    End If
-
-    ReDim Preserve bytes(CLng(usedLength - 1))
-    Text = bytes
-End Property
-
-Public Property Let Text(value As String)
-    Dim bytes() As Byte
-    Dim length As LongLong
-    bytes = value
-    length = ArrayLength(bytes)
-    If length > 0 Then
-         TWSetBytes mHandle, VarPtr(bytes(0)), length, UNUSED
-    Else
-         TWSetBytes mHandle, 0, 0, UNUSED
-    End If
-End Property
-
-Public Property Get SelStart() As Integer
-    SelStart = CInt(TWGetSelStart(mHandle, UNUSED, UNUSED, UNUSED))
-End Property
-
-Public Property Let SelStart(value As Integer)
-    TWSetSelStart mHandle, CLngLng(value), UNUSED, UNUSED
-End Property
-
-Public Property Get WordWrap() As Boolean
-    WordWrap = TWGetWordWrap(mHandle, UNUSED, UNUSED, UNUSED)
-End Property
-
-Public Property Let WordWrap(value As Boolean)
-    TWSetWordWrap mHandle, value, UNUSED, UNUSED
-End Property
-
-' constructor/destructor
-Private Sub Class_Initialize()
-    mHandle = TWInit
-    mFont.Init mHandle
-End Sub
-
-Private Sub Class_Terminate()
-    TWTerm mHandle, UNUSED, UNUSED, UNUSED
-End Sub
-
-' methods
-Public Sub Show()
-    TWShow mHandle, UNUSED, UNUSED, UNUSED
-End Sub
-
-Public Sub Hide()
-    TWHide mHandle, UNUSED, UNUSED, UNUSED
-End Sub
-
-Public Sub SetResizeTarget(target As Object, parentForm As Object)
-    Dim backup As Control
-    Set backup = parentForm.ActiveControl
-    target.SetFocus
-    TWSetResizeTarget mHandle, UNUSED, UNUSED, UNUSED
-    If Not backup Is Nothing Then
-        backup.SetFocus
-    End If
-End Sub
-
-Public Sub ResizeAsTarget()
-    TWResize mHandle, UNUSED, UNUSED, UNUSED
-End Sub
-
-Public Sub SetFocus()
-    TWFocus mHandle, UNUSED, UNUSED, UNUSED
-End Sub
-
-#Else
-' ==============================================================================
-' Windows Scintilla Implementation
-' ==============================================================================
 
 #If VBA7 Then
     Private m_hSci As LongPtr
@@ -188,7 +30,7 @@ Private m_initialText As String
 Private m_initialWordWrap As Boolean
 Private m_wordWrapSet As Boolean
 
-' properties
+' Properties
 Public Property Get Font() As TextWindowFont
     Set Font = m_Font
 End Property
@@ -203,7 +45,7 @@ Public Property Get Text() As String
     End If
 End Property
 
-Public Property Let Text(value As String)
+Public Property Let Text(ByVal value As String)
     m_initialText = value
     If m_hSci <> 0 Then
         ScintillaSetText m_hSci, value
@@ -225,7 +67,7 @@ Public Property Get SelStart() As Long
     End If
 End Property
 
-Public Property Let SelStart(value As Long)
+Public Property Let SelStart(ByVal value As Long)
     If m_hSci <> 0 Then
         SendMessage m_hSci, SCI_SETCURRENTPOS, CLng(value), 0
         SendMessage m_hSci, SCI_SETSEL, CLng(value), CLng(value)
@@ -247,7 +89,7 @@ Public Property Get WordWrap() As Boolean
     End If
 End Property
 
-Public Property Let WordWrap(value As Boolean)
+Public Property Let WordWrap(ByVal value As Boolean)
     m_initialWordWrap = value
     m_wordWrapSet = True
     If m_hSci <> 0 Then
@@ -264,7 +106,7 @@ Public Property Let WordWrap(value As Boolean)
     End If
 End Property
 
-' constructor/destructor
+' Lifecycle
 Private Sub Class_Initialize()
     m_fallback = False
     m_initialWordWrap = True
@@ -279,7 +121,7 @@ Private Sub Class_Terminate()
     End If
 End Sub
 
-' methods
+' Methods
 Public Sub Show()
     If m_hSci <> 0 Then
         ShowWindow m_hSci, 5 ' SW_SHOW
@@ -305,7 +147,7 @@ Public Sub SetFocus()
     End If
 End Sub
 
-Public Sub SetResizeTarget(target As Object, parentForm As Object)
+Public Sub SetResizeTarget(ByVal target As Object, ByVal parentForm As Object)
     Set m_target = target
     Set m_parentForm = parentForm
 
@@ -386,7 +228,7 @@ Public Sub ResizeAsTarget()
     End If
 End Sub
 
-Private Sub CalculateTargetRect(target As Object, parentForm As Object, _
+Private Sub CalculateTargetRect(ByVal target As Object, ByVal parentForm As Object, _
                                ByRef outX As Long, ByRef outY As Long, _
                                ByRef outW As Long, ByRef outH As Long)
     Dim clientRc As RECT
@@ -397,6 +239,7 @@ Private Sub CalculateTargetRect(target As Object, parentForm As Object, _
     clientH = clientRc.Bottom - clientRc.Top
 
     Dim scaleX As Double, scaleY As Double
+    On Error Resume Next
     If parentForm.InsideWidth > 0 Then
         scaleX = clientW / parentForm.InsideWidth
     Else
@@ -408,24 +251,23 @@ Private Sub CalculateTargetRect(target As Object, parentForm As Object, _
     Else
         scaleY = 1.333333
     End If
+    On Error GoTo 0
 
     Dim ptLeft As Double, ptTop As Double
+    On Error Resume Next
     ptLeft = target.Left
     ptTop = target.Top
 
     ' If inside a Page of MultiPage, add container offsets
     If TypeName(target.Parent) = "Page" Then
-        On Error Resume Next
         ptLeft = ptLeft + target.Parent.Parent.Left + 2
         ' Offset for MultiPage tab strip (~20-22 pt)
         ptTop = ptTop + target.Parent.Parent.Top + 22
-        On Error GoTo 0
     End If
+    On Error GoTo 0
 
     outX = CLng(ptLeft * scaleX)
     outY = CLng(ptTop * scaleY)
     outW = CLng(target.Width * scaleX)
     outH = CLng(target.Height * scaleY)
 End Sub
-
-#End If
