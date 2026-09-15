@@ -22,9 +22,15 @@ Option Explicit
     Public Declare PtrSafe Function DestroyWindow Lib "user32" (ByVal hWnd As LongPtr) As Long
     Public Declare PtrSafe Function MoveWindow Lib "user32" (ByVal hWnd As LongPtr, ByVal x As Long, ByVal y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal bRepaint As Long) As Long
     Public Declare PtrSafe Function ShowWindow Lib "user32" (ByVal hWnd As LongPtr, ByVal nCmdShow As Long) As Long
+    Public Declare PtrSafe Function BringWindowToTop Lib "user32" (ByVal hWnd As LongPtr) As Long
+    Public Declare PtrSafe Function SetWindowPos Lib "user32" ( _
+        ByVal hWnd As LongPtr, ByVal hWndInsertAfter As LongPtr, _
+        ByVal x As Long, ByVal y As Long, ByVal cx As Long, ByVal cy As Long, _
+        ByVal uFlags As Long) As Long
     Public Declare PtrSafe Function SetFocusAPI Lib "user32" Alias "SetFocus" (ByVal hWnd As LongPtr) As LongPtr
     Public Declare PtrSafe Function GetFocusAPI Lib "user32" Alias "GetFocus" () As LongPtr
     Public Declare PtrSafe Function IsWindow Lib "user32" (ByVal hWnd As LongPtr) As Long
+    Public Declare PtrSafe Function IsWindowVisible Lib "user32" (ByVal hWnd As LongPtr) As Long
 
     Public Declare PtrSafe Function SendMessage Lib "user32" Alias "SendMessageA" ( _
         ByVal hWnd As LongPtr, ByVal wMsg As Long, ByVal wParam As LongPtr, ByVal lParam As LongPtr) As LongPtr
@@ -74,9 +80,15 @@ Option Explicit
     Public Declare Function DestroyWindow Lib "user32" (ByVal hWnd As Long) As Long
     Public Declare Function MoveWindow Lib "user32" (ByVal hWnd As Long, ByVal x As Long, ByVal y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal bRepaint As Long) As Long
     Public Declare Function ShowWindow Lib "user32" (ByVal hWnd As Long, ByVal nCmdShow As Long) As Long
+    Public Declare Function BringWindowToTop Lib "user32" (ByVal hWnd As Long) As Long
+    Public Declare Function SetWindowPos Lib "user32" ( _
+        ByVal hWnd As Long, ByVal hWndInsertAfter As Long, _
+        ByVal x As Long, ByVal y As Long, ByVal cx As Long, ByVal cy As Long, _
+        ByVal uFlags As Long) As Long
     Public Declare Function SetFocusAPI Lib "user32" Alias "SetFocus" (ByVal hWnd As Long) As Long
     Public Declare Function GetFocusAPI Lib "user32" Alias "GetFocus" () As Long
     Public Declare Function IsWindow Lib "user32" (ByVal hWnd As Long) As Long
+    Public Declare Function IsWindowVisible Lib "user32" (ByVal hWnd As Long) As Long
 
     Public Declare Function SendMessage Lib "user32" Alias "SendMessageA" ( _
         ByVal hWnd As Long, ByVal wMsg As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
@@ -127,8 +139,13 @@ Public Const WS_CLIPCHILDREN As Long = &H2000000
 Public Const WS_CLIPSIBLINGS As Long = &H4000000
 Public Const WS_VSCROLL As Long = &H200000
 Public Const WS_HSCROLL As Long = &H100000
-Public Const WS_BORDER As Long = &H800000
 Public Const WS_EX_CLIENTEDGE As Long = &H200
+
+' SetWindowPos flags
+Public Const HWND_TOP As Long = 0
+Public Const SWP_NOSIZE As Long = &H1
+Public Const SWP_NOMOVE As Long = &H2
+Public Const SWP_SHOWWINDOW As Long = &H40
 
 ' Scintilla Messages
 Public Const SCI_SETTEXT As Long = 2181

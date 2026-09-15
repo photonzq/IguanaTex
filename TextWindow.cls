@@ -125,6 +125,8 @@ End Sub
 Public Sub Show()
     If m_hSci <> 0 Then
         ShowWindow m_hSci, 5 ' SW_SHOW
+        BringWindowToTop m_hSci
+        SetWindowPos m_hSci, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE Or SWP_NOSIZE Or SWP_SHOWWINDOW
     ElseIf Not m_target Is Nothing Then
         m_target.Visible = True
     End If
@@ -210,6 +212,12 @@ Public Sub SetResizeTarget(ByVal target As Object, ByVal parentForm As Object)
         ' Start bracket matching timer
         StartBracketMatchTimer m_hSci
 
+        ' Bring to top of Z-order if visible
+        If IsWindowVisible(m_hSci) <> 0 Then
+            BringWindowToTop m_hSci
+            SetWindowPos m_hSci, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE Or SWP_NOSIZE
+        End If
+
         ' Hide the placeholder TextBox
         On Error Resume Next
         m_target.Visible = False
@@ -222,9 +230,13 @@ End Sub
 
 Public Sub ResizeAsTarget()
     If m_hSci <> 0 And Not m_target Is Nothing And Not m_parentForm Is Nothing Then
-        Dim x As Long, y As Long, w As Long, h As Long
-        CalculateTargetRect m_target, m_parentForm, x, y, w, h
-        MoveWindow m_hSci, x, y, w, h, 1
+        If IsWindowVisible(m_hSci) <> 0 Then
+            Dim x As Long, y As Long, w As Long, h As Long
+            CalculateTargetRect m_target, m_parentForm, x, y, w, h
+            MoveWindow m_hSci, x, y, w, h, 1
+            BringWindowToTop m_hSci
+            SetWindowPos m_hSci, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE Or SWP_NOSIZE
+        End If
     End If
 End Sub
 
