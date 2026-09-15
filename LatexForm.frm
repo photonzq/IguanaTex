@@ -32,13 +32,8 @@ Private DoneWithActivation As Boolean
 
 Private theAppEventHandler As New AppEventHandler
 
-#If Mac Then
     Public TextWindow1 As New TextWindow
     Public TextWindowTemplateCode As New TextWindow
-#Else
-    Public TextWindow1 As MSForms.TextBox
-    Public TextWindowTemplateCode As MSForms.TextBox
-#End If
 
 Sub InitializeApp()
     Set theAppEventHandler.App = Application
@@ -1444,12 +1439,7 @@ Private Sub ToggleButtonWrap_Click()
 End Sub
 
 Private Sub UserForm_Initialize()
-    #If Mac Then
-        
-    #Else
-        Set TextWindow1 = Me.TextBox1
-        Set TextWindowTemplateCode = Me.TextBoxTemplateCode
-    #End If
+
 
     LoadSettings
     Apply_BitmapVector_Change
@@ -1680,10 +1670,8 @@ Private Sub ResizeForm()
     CheckBoxResetFormat.Top = checkboxDebug.Top
     CheckBoxResetFormat.Left = checkboxDebug.Left + checkboxDebug.Width + 10
     
-    #If Mac Then
-        TextWindow1.ResizeAsTarget
-        TextWindowTemplateCode.ResizeAsTarget
-    #End If
+    TextWindow1.ResizeAsTarget
+    TextWindowTemplateCode.ResizeAsTarget
 
 End Sub
 
@@ -1816,21 +1804,19 @@ Private Sub ButtonLoadAndGenerate_Click()
 End Sub
 
 Private Sub ToggleInputMode()
-    #If Mac Then
-        If MultiPage1.value = 0 Then
-            TextWindow1.Show
-            TextWindow1.SetResizeTarget TextBox1, Me
-        Else
-            TextWindow1.Hide
-        End If
-    
-        If MultiPage1.value = 2 Then
-            TextWindowTemplateCode.Show
-            TextWindowTemplateCode.SetResizeTarget TextBoxTemplateCode, Me
-        Else
-            TextWindowTemplateCode.Hide
-        End If
-    #End If
+    If MultiPage1.value = 0 Then
+        TextWindow1.Show
+        TextWindow1.SetResizeTarget TextBox1, Me
+    Else
+        TextWindow1.Hide
+    End If
+
+    If MultiPage1.value = 2 Then
+        TextWindowTemplateCode.Show
+        TextWindowTemplateCode.SetResizeTarget TextBoxTemplateCode, Me
+    Else
+        TextWindowTemplateCode.Hide
+    End If
 
     UserForm_Resize
     
@@ -1924,6 +1910,9 @@ End Sub
 
 Private Sub Userform_QueryClose(Cancel As Integer, CloseMode As Integer)
         UnhookListBoxScroll
+        #If Not Mac Then
+            StopBracketMatchTimer
+        #End If
 End Sub
 
 #End If
