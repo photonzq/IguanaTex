@@ -152,6 +152,7 @@ Public Const SCI_SETTEXT As Long = 2181
 Public Const SCI_GETTEXT As Long = 2182
 Public Const SCI_GETLENGTH As Long = 2006
 Public Const SCI_SETILEXER As Long = 4033
+Public Const SCI_COLOURISE As Long = 4003
 Public Const SCI_STYLESETFONT As Long = 2056
 Public Const SCI_STYLESETSIZE As Long = 2055
 Public Const SCI_STYLESETFORE As Long = 2051
@@ -180,6 +181,24 @@ Public Const SCI_SETINDENTATIONGUIDES As Long = 2132
 Public Const SCI_SETCARETLINEVISIBLE As Long = 2096
 Public Const SCI_SETCARETLINEBACK As Long = 2098
 Public Const SCI_SETFOCUS As Long = 2380
+Public Const SCI_SETEOLMODE As Long = 2031
+Public Const SCI_GETEOLMODE As Long = 2030
+Public Const SC_EOL_CRLF As Long = 0
+Public Const SCI_SETHSCROLLBAR As Long = 2130
+Public Const SCI_SETVSCROLLBAR As Long = 2280
+Public Const SCI_SETWRAPVISUALFLAGS As Long = 2460
+Public Const SC_WRAPVISUALFLAG_END As Long = 1
+Public Const SCI_SETWRAPINDENTMODE As Long = 2472
+Public Const SC_WRAPINDENT_SAME As Long = 1
+Public Const SCI_SETPASTECONVERTENDINGS As Long = 2121
+Public Const SCI_GETSELTEXT As Long = 2161
+Public Const SCI_REPLACESEL As Long = 2170
+Public Const SCI_SCROLLCARET As Long = 2169
+Public Const SCI_SETCARETWIDTH As Long = 2188
+Public Const SCI_SETCARETPERIOD As Long = 2076
+Public Const SCI_SETSELFORE As Long = 2067
+Public Const SCI_SETSELBACK As Long = 2068
+Public Const SCI_SETHIDESELECTION As Long = 2163
 
 ' Style indices
 Public Const STYLE_DEFAULT As Long = 32
@@ -369,6 +388,8 @@ Public Sub SetupScintillaEditor(ByVal hSci As Long, Optional ByVal fontSize As L
     ' Tags / Environments ({equation}, {align}) -> Dark Cyan, Bold
     SendMessage hSci, SCI_STYLESETFORE, SCE_L_TAG, RGB(0, 130, 130)
     SendMessage hSci, SCI_STYLESETBOLD, SCE_L_TAG, 1
+    SendMessage hSci, SCI_STYLESETFORE, SCE_L_TAG2, RGB(0, 130, 130)
+    SendMessage hSci, SCI_STYLESETBOLD, SCE_L_TAG2, 1
 
     ' Inline Math ($...$) -> Dark Green
     SendMessage hSci, SCI_STYLESETFORE, SCE_L_MATH, RGB(20, 128, 20)
@@ -391,6 +412,13 @@ Public Sub SetupScintillaEditor(ByVal hSci As Long, Optional ByVal fontSize As L
 
     ' Command options ([12pt], [h!]) -> Dark Golden / Orange
     SendMessage hSci, SCI_STYLESETFORE, SCE_L_CMDOPT, RGB(160, 80, 0)
+    
+    ' Verbatim environment text -> Warm Brown
+    SendMessage hSci, SCI_STYLESETFORE, SCE_L_VERBATIM, RGB(130, 65, 10)
+
+    ' Syntax errors -> Bold Crimson
+    SendMessage hSci, SCI_STYLESETFORE, SCE_L_ERROR, RGB(220, 20, 20)
+    SendMessage hSci, SCI_STYLESETBOLD, SCE_L_ERROR, 1
 
     ' 6. Bracket Matching Styles
     ' Matched braces -> Soft blue background, bold
@@ -406,9 +434,18 @@ Public Sub SetupScintillaEditor(ByVal hSci As Long, Optional ByVal fontSize As L
     ' 7. Caret & Editor Usability
     SendMessage hSci, SCI_SETCARETLINEVISIBLE, 1, 0
     SendMessage hSci, SCI_SETCARETLINEBACK, RGB(246, 248, 254), 0
+    SendMessage hSci, SCI_SETCARETWIDTH, 2, 0
+    SendMessage hSci, SCI_SETCARETPERIOD, 500, 0
+    SendMessage hSci, SCI_SETSELBACK, 1, RGB(180, 215, 255)
+    SendMessage hSci, SCI_SETHIDESELECTION, 0, 0
     SendMessage hSci, SCI_SETTABWIDTH, 2, 0
     SendMessage hSci, SCI_SETINDENTATIONGUIDES, 1, 0
-    SendMessage hSci, SCI_SETWRAPMODE, SC_WRAP_WORD, 0
+    SendMessage hSci, SCI_SETEOLMODE, SC_EOL_CRLF, 0
+    SendMessage hSci, SCI_SETPASTECONVERTENDINGS, 1, 0
+    SendMessage hSci, SCI_SETWRAPMODE, SC_WRAP_NONE, 0
+    SendMessage hSci, SCI_SETHSCROLLBAR, 1, 0
+    SendMessage hSci, SCI_SETVSCROLLBAR, 1, 0
+    SendMessage hSci, SCI_COLOURISE, 0, -1
 End Sub
 
 ' ------------------------------------------------------------------------------
@@ -485,6 +522,140 @@ Public Sub ScintillaSetText(ByVal hSci As Long, ByVal text As String)
             SendMessageBytes hSci, SCI_SETTEXT, 0, utf8Bytes(0)
         End If
     #End If
+    SendMessage hSci, SCI_COLOURISE, 0, -1
+End Sub
+
+' ------------------------------------------------------------------------------
+' Snippet Insertion & Selection Utilities
+' ------------------------------------------------------------------------------
+
+Public Function Utf8ByteLength(ByVal text As String) As Long
+    If Len(text) = 0 Then
+        Utf8ByteLength = 0
+        Exit Function
+    End If
+    #If VBA7 Then
+        Utf8ByteLength = WideCharToMultiByte(SC_CP_UTF8, 0, StrPtr(text), Len(text), 0, 0, 0, 0)
+    #Else
+        Utf8ByteLength = WideCharToMultiByte(SC_CP_UTF8, 0, StrPtr(text), Len(text), 0, 0, 0, 0)
+    #End If
+End Function
+
+#If VBA7 Then
+Public Sub ScintillaReplaceSel(ByVal hSci As LongPtr, ByVal text As String)
+#Else
+Public Sub ScintillaReplaceSel(ByVal hSci As Long, ByVal text As String)
+#End If
+    If hSci = 0 Then Exit Sub
+    If Len(text) = 0 Then
+        SendMessageStr hSci, SCI_REPLACESEL, 0, "" & vbNullChar
+        Exit Sub
+    End If
+
+    Dim utf8Len As Long
+    #If VBA7 Then
+        utf8Len = WideCharToMultiByte(SC_CP_UTF8, 0, StrPtr(text), Len(text), 0, 0, 0, 0)
+        If utf8Len > 0 Then
+            Dim utf8Bytes() As Byte
+            ReDim utf8Bytes(0 To utf8Len)
+            WideCharToMultiByte SC_CP_UTF8, 0, StrPtr(text), Len(text), VarPtr(utf8Bytes(0)), utf8Len, 0, 0
+            utf8Bytes(utf8Len) = 0
+            SendMessageBytes hSci, SCI_REPLACESEL, 0, utf8Bytes(0)
+        End If
+    #Else
+        utf8Len = WideCharToMultiByte(SC_CP_UTF8, 0, StrPtr(text), Len(text), 0, 0, 0, 0)
+        If utf8Len > 0 Then
+            Dim utf8Bytes() As Byte
+            ReDim utf8Bytes(0 To utf8Len)
+            WideCharToMultiByte SC_CP_UTF8, 0, StrPtr(text), Len(text), VarPtr(utf8Bytes(0)), utf8Len, 0, 0
+            utf8Bytes(utf8Len) = 0
+            SendMessageBytes hSci, SCI_REPLACESEL, 0, utf8Bytes(0)
+        End If
+    #End If
+End Sub
+
+#If VBA7 Then
+Public Function ScintillaGetSelText(ByVal hSci As LongPtr) As String
+#Else
+Public Function ScintillaGetSelText(ByVal hSci As Long) As String
+#End If
+    If hSci = 0 Then Exit Function
+    Dim selStart As Long, selEnd As Long
+    selStart = SendMessage(hSci, SCI_GETSELECTIONSTART, 0, 0)
+    selEnd = SendMessage(hSci, SCI_GETSELECTIONEND, 0, 0)
+    If selEnd <= selStart Then Exit Function
+
+    Dim selLen As Long
+    selLen = selEnd - selStart
+    Dim utf8Bytes() As Byte
+    ReDim utf8Bytes(0 To selLen + 1)
+    SendMessageBytes hSci, SCI_GETSELTEXT, 0, utf8Bytes(0)
+
+    Dim wideLen As Long
+    #If VBA7 Then
+        wideLen = MultiByteToWideChar(SC_CP_UTF8, 0, VarPtr(utf8Bytes(0)), selLen, 0, 0)
+        If wideLen > 0 Then
+            Dim result As String
+            result = Space$(wideLen)
+            MultiByteToWideChar SC_CP_UTF8, 0, VarPtr(utf8Bytes(0)), selLen, StrPtr(result), wideLen
+            ScintillaGetSelText = result
+        End If
+    #Else
+        wideLen = MultiByteToWideChar(SC_CP_UTF8, 0, VarPtr(utf8Bytes(0)), selLen, 0, 0)
+        If wideLen > 0 Then
+            Dim result As String
+            result = Space$(wideLen)
+            MultiByteToWideChar SC_CP_UTF8, 0, VarPtr(utf8Bytes(0)), selLen, StrPtr(result), wideLen
+            ScintillaGetSelText = result
+        End If
+    #End If
+End Function
+
+#If VBA7 Then
+Public Sub ScintillaInsertSnippet(ByVal hSci As LongPtr, ByVal prefix As String, ByVal suffix As String)
+#Else
+Public Sub ScintillaInsertSnippet(ByVal hSci As Long, ByVal prefix As String, ByVal suffix As String)
+#End If
+    If hSci = 0 Then Exit Sub
+
+    Dim selStart As Long, selEnd As Long
+    selStart = SendMessage(hSci, SCI_GETSELECTIONSTART, 0, 0)
+    selEnd = SendMessage(hSci, SCI_GETSELECTIONEND, 0, 0)
+
+    Dim selectedText As String
+    If selEnd > selStart Then
+        selectedText = ScintillaGetSelText(hSci)
+    Else
+        selectedText = ""
+    End If
+
+    Dim replacement As String
+    Dim targetCaretPos As Long
+
+    If Len(selectedText) > 0 Then
+        ' Wrap selection
+        replacement = prefix & selectedText & suffix
+        ScintillaReplaceSel hSci, replacement
+
+        ' If suffix has empty braces like "}{}", position caret inside denominator
+        If InStr(1, suffix, "}{}") > 0 Then
+            targetCaretPos = selStart + Utf8ByteLength(prefix & selectedText & "}{")
+        ElseIf Len(suffix) > 0 Then
+            targetCaretPos = selStart + Utf8ByteLength(prefix & selectedText & suffix)
+        Else
+            targetCaretPos = selStart + Utf8ByteLength(prefix & selectedText)
+        End If
+    Else
+        ' No selection: insert prefix + suffix and place caret inside
+        replacement = prefix & suffix
+        ScintillaReplaceSel hSci, replacement
+        targetCaretPos = selStart + Utf8ByteLength(prefix)
+    End If
+
+    ' Reposition caret & focus
+    SendMessage hSci, SCI_SETSEL, targetCaretPos, targetCaretPos
+    SendMessage hSci, SCI_SCROLLCARET, 0, 0
+    SetFocusAPI hSci
 End Sub
 
 ' ------------------------------------------------------------------------------

@@ -35,6 +35,20 @@ Private theAppEventHandler As New AppEventHandler
     Public TextWindow1 As New TextWindow
     Public TextWindowTemplateCode As New TextWindow
 
+    ' Snippet & Symbol Toolbar Controls
+    Private WithEvents BtnEq As MSForms.CommandButton
+    Private WithEvents BtnAlign As MSForms.CommandButton
+    Private WithEvents BtnFrac As MSForms.CommandButton
+    Private WithEvents BtnSqrt As MSForms.CommandButton
+    Private WithEvents BtnText As MSForms.CommandButton
+    Private WithEvents BtnInlineMath As MSForms.CommandButton
+    Private WithEvents BtnDisplayMath As MSForms.CommandButton
+    Private WithEvents BtnParen As MSForms.CommandButton
+    Private WithEvents BtnBrace As MSForms.CommandButton
+    Private WithEvents CboSymbols As MSForms.ComboBox
+    Private WithEvents CboEnvs As MSForms.ComboBox
+    Private m_inCboChange As Boolean
+
 Sub InitializeApp()
     Set theAppEventHandler.App = Application
     
@@ -1186,7 +1200,7 @@ Private Sub LoadSettings()
     MultiPage1.value = GetITSetting("Multipage", 0)
     TextWindow1.Font.Size = val(GetITSetting("EditorFontSize", "10"))
     TextBoxTempFolder.Text = GetTempPath()
-    TextWindow1.WordWrap = CBool(GetITSetting("LatexFormWrap", True))
+    TextWindow1.WordWrap = CBool(GetITSetting("LatexFormWrap", False))
     ToggleButtonWrap.value = TextWindow1.WordWrap
     TextBoxFile.Text = GetITSetting("ReadFromFilePath", vbNullString)
     
@@ -1426,29 +1440,29 @@ Private Sub CmdButtonEditorFontDown_Click()
     If TextWindow1.Font.Size > 4 Then
         TextWindow1.Font.Size = TextWindow1.Font.Size - 1
     End If
+    TextWindow1.SetFocus
 End Sub
 
 Private Sub CmdButtonEditorFontUp_Click()
     If TextWindow1.Font.Size < 72 Then
         TextWindow1.Font.Size = TextWindow1.Font.Size + 1
     End If
+    TextWindow1.SetFocus
 End Sub
 
 Private Sub ToggleButtonWrap_Click()
     TextWindow1.WordWrap = ToggleButtonWrap.value = True
+    TextWindow1.SetFocus
 End Sub
 
 Private Sub UserForm_Initialize()
-
-
     LoadSettings
     Apply_BitmapVector_Change
-    ' With multiple monitors, the "CenterOwner" option to open the UserForm in the center of the parent window
-    ' does not seem to work, at least in Office 2010.
-    ' The following code to manually place the UserForm somehow makes the "CenterOwner" option work.
-    ' Remark: if used with the Manual placement option, it would place the window to the left, under the ribbon.
+
+    On Error Resume Next
     Me.Top = Application.Top + 110
     Me.Left = Application.Left + 25
+    On Error GoTo 0
     Me.Height = 320
     Me.Width = 385
     #If Mac Then
@@ -1464,14 +1478,13 @@ Private Sub UserForm_Initialize()
     ShowAcceleratorTip Me.MultiPage1.Pages(1)
     ShowAcceleratorTip Me.MultiPage1.Pages(2)
     
-        
-    LatexForm.textboxSize.Visible = True
-    LatexForm.Label2.Visible = True
-    LatexForm.Label3.Visible = True
+    Me.textboxSize.Visible = True
+    Me.Label2.Visible = True
+    Me.Label3.Visible = True
 
     FrameProcess.Visible = False
-    
-    
+
+    InitSnippetToolbar
 End Sub
 
 Public Function isFormModeless() As Boolean
@@ -1575,7 +1588,7 @@ Sub RetrieveOldShapeInfo(ByVal oldshape As Shape, ByVal mainText As String)
             FormWidthSet = True
         End If
         If .item("LATEXFORMWRAP") <> vbNullString Then
-            TextWindow1.WordWrap = SanitizeBoolean(.item("LATEXFORMWRAP"), True)
+            TextWindow1.WordWrap = SanitizeBoolean(.item("LATEXFORMWRAP"), False)
             ToggleButtonWrap.value = TextWindow1.WordWrap
         End If
     End With
@@ -1633,8 +1646,10 @@ Private Sub ResizeForm()
     MultiPage1.Width = LatexForm.Width - bordersize * 2
     MultiPage1.Height = LatexForm.Height - MultiPage1.Top - ButtonAbout.Height * 4
     ' Here, we resize TextBox1 as our reference, not TextWindow1 (which is different on Mac, and gets resized to TextBox1)
+    TextBox1.Top = 38
     TextBox1.Width = MultiPage1.Width - 12
     TextBox1.Height = MultiPage1.Height - TextBox1.Top - 20
+    PositionSnippetToolbar
     
     'Other elements are moved as needed
     ButtonAbout.Top = MultiPage1.Top + MultiPage1.Height + bordersize
@@ -1673,6 +1688,342 @@ Private Sub ResizeForm()
     TextWindow1.ResizeAsTarget
     TextWindowTemplateCode.ResizeAsTarget
 
+End Sub
+
+Private Sub InitSnippetToolbar()
+    On Error Resume Next
+    Dim p As Object
+    Set p = Me.MultiPage1.Pages(0)
+    If p Is Nothing Then Exit Sub
+    
+    Set BtnEq = p.Controls.Add("Forms.CommandButton.1", "BtnEq", True)
+    With BtnEq
+        .Caption = "eq*"
+        .ControlTipText = "Insert equation* environment"
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+    End With
+    
+    Set BtnAlign = p.Controls.Add("Forms.CommandButton.1", "BtnAlign", True)
+    With BtnAlign
+        .Caption = "align*"
+        .ControlTipText = "Insert align* environment"
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+    End With
+    
+    Set BtnFrac = p.Controls.Add("Forms.CommandButton.1", "BtnFrac", True)
+    With BtnFrac
+        .Caption = "a/b"
+        .ControlTipText = "Insert \frac{...}{...}"
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+    End With
+    
+    Set BtnSqrt = p.Controls.Add("Forms.CommandButton.1", "BtnSqrt", True)
+    With BtnSqrt
+        .Caption = ChrW(&H221A)
+        If .Caption = "?" Then .Caption = "sqrt"
+        .ControlTipText = "Insert \sqrt{...}"
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+    End With
+    
+    Set BtnText = p.Controls.Add("Forms.CommandButton.1", "BtnText", True)
+    With BtnText
+        .Caption = "text"
+        .ControlTipText = "Insert \text{...}"
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+    End With
+    
+    Set BtnInlineMath = p.Controls.Add("Forms.CommandButton.1", "BtnInlineMath", True)
+    With BtnInlineMath
+        .Caption = "$"
+        .ControlTipText = "Inline math $ ... $"
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+    End With
+    
+    Set BtnDisplayMath = p.Controls.Add("Forms.CommandButton.1", "BtnDisplayMath", True)
+    With BtnDisplayMath
+        .Caption = "$$"
+        .ControlTipText = "Display math $$ ... $$"
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+    End With
+    
+    Set BtnParen = p.Controls.Add("Forms.CommandButton.1", "BtnParen", True)
+    With BtnParen
+        .Caption = "( )"
+        .ControlTipText = "Wrap with parentheses"
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+    End With
+    
+    Set BtnBrace = p.Controls.Add("Forms.CommandButton.1", "BtnBrace", True)
+    With BtnBrace
+        .Caption = "{ }"
+        .ControlTipText = "Wrap with curly braces"
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+    End With
+    
+    Set CboSymbols = p.Controls.Add("Forms.ComboBox.1", "CboSymbols", True)
+    With CboSymbols
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+        .Style = fmStyleDropDownList
+        .AddItem ChrW(&H3A9) & " Symbols"
+        ' Greek Lower
+        .AddItem "\alpha"
+        .AddItem "\beta"
+        .AddItem "\gamma"
+        .AddItem "\delta"
+        .AddItem "\epsilon"
+        .AddItem "\zeta"
+        .AddItem "\eta"
+        .AddItem "\theta"
+        .AddItem "\iota"
+        .AddItem "\kappa"
+        .AddItem "\lambda"
+        .AddItem "\mu"
+        .AddItem "\nu"
+        .AddItem "\xi"
+        .AddItem "\pi"
+        .AddItem "\rho"
+        .AddItem "\sigma"
+        .AddItem "\tau"
+        .AddItem "\upsilon"
+        .AddItem "\phi"
+        .AddItem "\chi"
+        .AddItem "\psi"
+        .AddItem "\omega"
+        ' Greek Upper
+        .AddItem "\Gamma"
+        .AddItem "\Delta"
+        .AddItem "\Theta"
+        .AddItem "\Lambda"
+        .AddItem "\Xi"
+        .AddItem "\Pi"
+        .AddItem "\Sigma"
+        .AddItem "\Phi"
+        .AddItem "\Psi"
+        .AddItem "\Omega"
+        ' Operators / Calculus
+        .AddItem "\int"
+        .AddItem "\iint"
+        .AddItem "\oint"
+        .AddItem "\sum"
+        .AddItem "\prod"
+        .AddItem "\partial"
+        .AddItem "\nabla"
+        .AddItem "\infty"
+        .AddItem "\lim"
+        ' Relations
+        .AddItem "\leq"
+        .AddItem "\geq"
+        .AddItem "\neq"
+        .AddItem "\approx"
+        .AddItem "\equiv"
+        .AddItem "\propto"
+        .AddItem "\sim"
+        ' Sets & Logic
+        .AddItem "\pm"
+        .AddItem "\times"
+        .AddItem "\cdot"
+        .AddItem "\in"
+        .AddItem "\notin"
+        .AddItem "\subset"
+        .AddItem "\cup"
+        .AddItem "\cap"
+        .AddItem "\forall"
+        .AddItem "\exists"
+        ' Arrows
+        .AddItem "\rightarrow"
+        .AddItem "\leftarrow"
+        .AddItem "\Rightarrow"
+        .AddItem "\Leftarrow"
+        .AddItem "\iff"
+        .AddItem "\implies"
+        ' Accents
+        .AddItem "\hat"
+        .AddItem "\bar"
+        .AddItem "\vec"
+        .AddItem "\dot"
+        .AddItem "\ddot"
+        .AddItem "\tilde"
+        .AddItem "\mathbf"
+        .AddItem "\mathcal"
+        .AddItem "\mathbb"
+        .AddItem "\mathrm"
+        .AddItem "\bm"
+        .ListIndex = 0
+    End With
+    
+    Set CboEnvs = p.Controls.Add("Forms.ComboBox.1", "CboEnvs", True)
+    With CboEnvs
+        .Font.Name = "Segoe UI"
+        .Font.Size = 8
+        .Style = fmStyleDropDownList
+        .AddItem "{ } Envs"
+        .AddItem "equation*"
+        .AddItem "equation"
+        .AddItem "align*"
+        .AddItem "align"
+        .AddItem "aligned"
+        .AddItem "gather*"
+        .AddItem "gather"
+        .AddItem "multline*"
+        .AddItem "multline"
+        .AddItem "cases"
+        .AddItem "pmatrix"
+        .AddItem "bmatrix"
+        .AddItem "vmatrix"
+        .AddItem "matrix"
+        .AddItem "array"
+        .AddItem "tabular"
+        .AddItem "itemize"
+        .AddItem "enumerate"
+        .ListIndex = 0
+    End With
+    
+    PositionSnippetToolbar
+    On Error GoTo 0
+End Sub
+
+Private Sub PositionSnippetToolbar()
+    On Error Resume Next
+    If CboEnvs Is Nothing Then Exit Sub
+    Dim tY As Double, tH As Double, curX As Double, gap As Double
+    tY = 18
+    tH = 17
+    gap = 2
+    curX = 0
+    
+    BtnEq.Move curX, tY, 24, tH: curX = curX + 24 + gap
+    BtnAlign.Move curX, tY, 30, tH: curX = curX + 30 + gap
+    BtnFrac.Move curX, tY, 22, tH: curX = curX + 22 + gap
+    BtnSqrt.Move curX, tY, 16, tH: curX = curX + 16 + gap
+    BtnText.Move curX, tY, 22, tH: curX = curX + 22 + gap
+    BtnInlineMath.Move curX, tY, 15, tH: curX = curX + 15 + gap
+    BtnDisplayMath.Move curX, tY, 18, tH: curX = curX + 18 + gap
+    BtnParen.Move curX, tY, 17, tH: curX = curX + 17 + gap
+    BtnBrace.Move curX, tY, 17, tH: curX = curX + 17 + gap
+    CboSymbols.Move curX, tY, 74, tH: curX = curX + 74 + gap
+    CboEnvs.Move curX, tY, 68, tH
+End Sub
+
+Private Sub BtnEq_Click()
+    TextWindow1.InsertSnippet "\begin{equation*}" & vbCrLf & "    ", vbCrLf & "\end{equation*}"
+    TextWindow1.SetFocus
+End Sub
+
+Private Sub BtnAlign_Click()
+    TextWindow1.InsertSnippet "\begin{align*}" & vbCrLf & "    ", vbCrLf & "\end{align*}"
+    TextWindow1.SetFocus
+End Sub
+
+Private Sub BtnFrac_Click()
+    TextWindow1.InsertSnippet "\frac{", "}{}"
+    TextWindow1.SetFocus
+End Sub
+
+Private Sub BtnSqrt_Click()
+    TextWindow1.InsertSnippet "\sqrt{", "}"
+    TextWindow1.SetFocus
+End Sub
+
+Private Sub BtnText_Click()
+    TextWindow1.InsertSnippet "\text{", "}"
+    TextWindow1.SetFocus
+End Sub
+
+Private Sub BtnInlineMath_Click()
+    TextWindow1.InsertSnippet "$", "$"
+    TextWindow1.SetFocus
+End Sub
+
+Private Sub BtnDisplayMath_Click()
+    TextWindow1.InsertSnippet "$$" & vbCrLf & "    ", vbCrLf & "$$"
+    TextWindow1.SetFocus
+End Sub
+
+Private Sub BtnParen_Click()
+    TextWindow1.InsertSnippet "(", ")"
+    TextWindow1.SetFocus
+End Sub
+
+Private Sub BtnBrace_Click()
+    TextWindow1.InsertSnippet "{", "}"
+    TextWindow1.SetFocus
+End Sub
+
+Private Sub CboSymbols_Change()
+    If m_inCboChange Then Exit Sub
+    If CboSymbols.ListIndex > 0 Then
+        m_inCboChange = True
+        Dim sym As String
+        sym = CboSymbols.List(CboSymbols.ListIndex)
+        Select Case sym
+            Case "\hat", "\bar", "\vec", "\dot", "\ddot", "\tilde", "\mathbf", "\mathcal", "\mathbb", "\mathrm", "\bm"
+                TextWindow1.InsertSnippet sym & "{", "}"
+            Case "\lim", "\sup", "\inf", "\max", "\min"
+                TextWindow1.InsertSnippet sym & "_{", "}"
+            Case Else
+                TextWindow1.InsertSnippet sym & " ", ""
+        End Select
+        CboSymbols.ListIndex = 0
+        m_inCboChange = False
+        TextWindow1.SetFocus
+    End If
+End Sub
+
+Private Sub CboEnvs_Change()
+    If m_inCboChange Then Exit Sub
+    If CboEnvs.ListIndex > 0 Then
+        m_inCboChange = True
+        Dim env As String
+        env = CboEnvs.List(CboEnvs.ListIndex)
+        Dim selText As String
+        selText = TextWindow1.GetSelectedText()
+        
+        If Len(selText) > 0 Then
+            ' Wrap selection cleanly
+            Select Case env
+                Case "array", "tabular"
+                    TextWindow1.InsertSnippet "\begin{" & env & "}{cc}" & vbCrLf & "    ", vbCrLf & "\end{" & env & "}"
+                Case "itemize", "enumerate"
+                    TextWindow1.InsertSnippet "\begin{" & env & "}" & vbCrLf & "    \item ", vbCrLf & "\end{" & env & "}"
+                Case Else
+                    TextWindow1.InsertSnippet "\begin{" & env & "}" & vbCrLf & "    ", vbCrLf & "\end{" & env & "}"
+            End Select
+        Else
+            ' No selection: insert template skeleton with alignment points
+            Select Case env
+                Case "equation", "equation*", "gather", "gather*"
+                    TextWindow1.InsertSnippet "\begin{" & env & "}" & vbCrLf & "    ", vbCrLf & "\end{" & env & "}"
+                Case "align", "align*", "aligned"
+                    TextWindow1.InsertSnippet "\begin{" & env & "}" & vbCrLf & "    ", " & \\" & vbCrLf & "    & " & vbCrLf & "\end{" & env & "}"
+                Case "multline", "multline*"
+                    TextWindow1.InsertSnippet "\begin{" & env & "}" & vbCrLf & "    ", " \\" & vbCrLf & "    " & vbCrLf & "\end{" & env & "}"
+                Case "cases"
+                    TextWindow1.InsertSnippet "\begin{cases}" & vbCrLf & "    ", " & \\" & vbCrLf & "    & " & vbCrLf & "\end{cases}"
+                Case "pmatrix", "bmatrix", "vmatrix", "matrix"
+                    TextWindow1.InsertSnippet "\begin{" & env & "}" & vbCrLf & "    ", " & \\" & vbCrLf & "    & " & vbCrLf & "\end{" & env & "}"
+                Case "array", "tabular"
+                    TextWindow1.InsertSnippet "\begin{" & env & "}{cc}" & vbCrLf & "    ", " & \\" & vbCrLf & "\end{" & env & "}"
+                Case "itemize", "enumerate"
+                    TextWindow1.InsertSnippet "\begin{" & env & "}" & vbCrLf & "    \item ", vbCrLf & "\end{" & env & "}"
+                Case Else
+                    TextWindow1.InsertSnippet "\begin{" & env & "}" & vbCrLf & "    ", vbCrLf & "\end{" & env & "}"
+            End Select
+        End If
+        
+        CboEnvs.ListIndex = 0
+        m_inCboChange = False
+        TextWindow1.SetFocus
+    End If
 End Sub
 
 Private Sub MoveAnimation(ByVal oldshape As Shape, ByVal NewShape As Shape)

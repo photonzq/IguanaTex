@@ -10,6 +10,8 @@ The add-in file (.ppam) and its source version (.pptm) can be found in the [Rele
 
 ## Table of Contents
 
+- [Scintilla Windows Edition (Gemini Enhanced)](#scintilla-windows-edition-gemini-enhanced)
+- [How to Compile & Deploy (Windows)](#how-to-compile--deploy-windows)
 - [System Requirements](#system-requirements)
   - [Windows](#windows)
   - [Mac](#mac)
@@ -26,6 +28,113 @@ The add-in file (.ppam) and its source version (.pptm) can be found in the [Rele
   - [Known Issues](#known-issues)
 - [Stay up to date: IguanaTex Google Group](#stay-up-to-date-iguanatex-google-group)
 - [License](#license)
+
+## Scintilla Windows Edition (Gemini Enhanced)
+
+> [!NOTE]
+> **Windows-Only Enhancement**: This version features an upgraded in-place code editor powered by **Scintilla 5.5.x** and **Lexilla**, developed with **Gemini (Antigravity)**. On macOS, IguanaTex continues to use its native `NSTextView` / MSForms editor without modification.
+
+![IguanaTex Scintilla Editor Preview](scintilla_editor_preview.png)
+
+### Key Improvements
+
+1. **Native Scintilla Editor Integration**:
+   - Replaces the standard MSForms TextBox with a native Win32 Scintilla editing control (`Scintilla.dll` + `Lexilla.dll`), supporting both 32-bit and 64-bit PowerPoint on Windows.
+   - **Line Numbering**: Dedicated, styled line-number margin with responsive gutter sizing.
+   - **Full LaTeX Syntax Highlighting**: Powered by Lexilla's LaTeX lexer:
+     - Commands (`\documentclass`, `\int`, `\frac`, etc.) in bold blue.
+     - Environment tags (`\begin{...}` and `\end{...}`) in bold dark cyan (`SCE_L_TAG` and `SCE_L_TAG2`).
+     - Inline math (`$...$`) and display math (`$$...$$`, `\[...\]`) in green.
+     - Command options (`[12pt]`, `[h!]`) in dark orange.
+     - Comments (`% ...`) in italic slate gray.
+     - Verbatim blocks and special LaTeX tokens (`&`, `^`, `_`, `~`) distinctly styled.
+   - **Interactive Bracket Matching**: Highlights matching pairs of braces `{}`, parentheses `()`, and brackets `[]` with a soft blue backdrop, and highlights mismatched braces in red.
+   - **Active Line Highlighting**: Subtle highlight on the line containing the caret.
+   - **Word Wrap & Ergonomics**:
+     - Word wrap defaults to **OFF**, allowing horizontal scrollbar navigation and natural newline/Enter behavior.
+     - Toggle word wrap anytime via the editor header button.
+     - Dynamic DPI scaling support.
+
+2. **Snippet & Usability Toolbar**:
+   - **Quick Action Buttons**:
+     - `[eq*]`: Inserts `\begin{equation*}` ... `\end{equation*}`.
+     - `[align*]`: Inserts `\begin{align*}` ... `\end{align*}`.
+     - `[a/b]`: Inserts `\frac{}{}` (places caret in numerator, or denominator if text was selected).
+     - `[√]`: Inserts `\sqrt{}`.
+     - `[text]`: Inserts `\text{}`.
+     - `[$]` / `[$$]`: Inserts inline or display math delimiters.
+     - `[( )]` / `[{ }]`: Wraps or inserts parentheses/braces.
+   - **`Ω Symbols ▾` Dropdown**:
+     - Quick insertion of Greek lowercase/uppercase letters.
+     - Calculus & operator symbols: `\int`, `\iint`, `\oint`, `\sum`, `\prod`, `\partial`, `\nabla`, `\infty`, `\lim`, `\sup`, `\inf`, `\max`, `\min`.
+     - Relations (`\leq`, `\geq`, `\neq`, `\approx`, `\equiv`, etc.) and logic/set symbols (`\in`, `\subset`, `\cup`, `\cap`, `\forall`, `\exists`).
+     - Math fonts: `\mathbf{}`, `\mathcal{}`, `\mathbb{}`, `\mathrm{}`, `\bm{}`.
+   - **`{ } Envs ▾` Dropdown**:
+     - Full suite of environments: `equation*`, `equation`, `align*`, `align`, `aligned`, `gather*`, `gather`, `multline*`, `multline`, `cases`, `pmatrix`, `bmatrix`, `vmatrix`, `matrix`, `array`, `tabular`, `itemize`, `enumerate`.
+   - **Smart Selection-Wrapping**:
+     - When text is selected in the editor, selecting an environment or clicking a snippet wraps the selected text directly.
+     - When no text is selected, inserts a formatted multi-line template skeleton with alignment points and positions the caret inside.
+     - Scintilla editor retains visible selection and receives focus immediately after insertion.
+
+---
+
+## How to Compile & Deploy (Windows)
+
+The VBA source code can be synced, compiled, and deployed into `.pptm` and `.ppam` add-in packages automatically using Python automation:
+
+### Prerequisites
+- Windows 10/11 with Microsoft PowerPoint installed (32-bit or 64-bit).
+- Python 3.10+ (e.g. Anaconda base Python) with `pywin32` and `Pillow`:
+  ```powershell
+  pip install pywin32 pillow
+  ```
+
+### Directory Layout
+```text
+IguanaTex/
+├── LatexForm.frm            # UserForm source code (includes snippet toolbar)
+├── TextWindow.cls           # Scintilla wrapper control class
+├── ScintillaConstants.bas   # Win32 API, Scintilla messages, styles, & helpers
+├── Macros.bas               # Add-in entry points and ribbon handlers
+├── build.py                 # Automated sync, compile, and deploy script
+├── lib/
+│   ├── x86/                 # 32-bit Scintilla.dll & Lexilla.dll
+│   └── x64/                 # 64-bit Scintilla.dll & Lexilla.dll
+└── scintilla_editor_preview.png
+```
+
+### One-Step Build & Deploy
+Run `build.py` using Python:
+```powershell
+python build.py
+# Or with Anaconda Python:
+& "C:\ProgramData\anaconda3\python.exe" build.py
+```
+
+### What `build.py` Does:
+1. **Syncs Source Code**: Reads `ScintillaConstants.bas`, `TextWindow.cls`, and `LatexForm.frm` (stripping header attributes) and injects them directly into the PowerPoint presentation's `VBProject`.
+2. **Automated VBE Compile**: Executes the PowerPoint VBA Compiler command bar control (`ID 578`) via COM to ensure zero compile or syntax errors.
+3. **Packages `.ppam`**: Extracts the compiled `ppt/vbaProject.bin` stream and injects it into `IguanaTex_Scintilla.ppam`.
+4. **Installs Add-In**: Copies `IguanaTex_Scintilla.ppam` directly to the PowerPoint Add-Ins directory:
+   ```text
+   %APPDATA%\Microsoft\AddIns\IguanaTex_Scintilla.ppam
+   ```
+5. **Deploys DLLs**: Copies the `lib\` directory containing both 32-bit and 64-bit Scintilla and Lexilla binaries alongside the add-in:
+   ```text
+   %APPDATA%\Microsoft\AddIns\lib\x86\Scintilla.dll
+   %APPDATA%\Microsoft\AddIns\lib\x86\Lexilla.dll
+   %APPDATA%\Microsoft\AddIns\lib\x64\Scintilla.dll
+   %APPDATA%\Microsoft\AddIns\lib\x64\Lexilla.dll
+   ```
+
+### Loading the Add-In in PowerPoint
+1. If PowerPoint is running, **close and restart PowerPoint** to ensure the new `.ppam` is loaded into memory.
+2. In PowerPoint, go to **File** > **Options** > **Add-Ins**.
+3. In the **Manage** dropdown at the bottom, select **PowerPoint Add-ins** and click **Go...**.
+4. Check **IguanaTex_Scintilla** (or click **Add New...** and choose `%APPDATA%\Microsoft\AddIns\IguanaTex_Scintilla.ppam`).
+5. Open any presentation and click **New LaTeX Display** in the IguanaTex ribbon tab to enjoy the new editor!
+
+---
 
 ## System Requirements
 

@@ -30,7 +30,16 @@ Private m_initialText As String
 Private m_initialWordWrap As Boolean
 Private m_wordWrapSet As Boolean
 
-' Properties
+#If VBA7 Then
+Public Property Get hWnd() As LongPtr
+    hWnd = m_hSci
+End Property
+#Else
+Public Property Get hWnd() As Long
+    hWnd = m_hSci
+End Property
+#End If
+
 Public Property Get Font() As TextWindowFont
     Set Font = m_Font
 End Property
@@ -79,6 +88,34 @@ Public Property Let SelStart(ByVal value As Long)
     End If
 End Property
 
+Public Function GetSelectedText() As String
+    If m_hSci <> 0 Then
+        GetSelectedText = ScintillaGetSelText(m_hSci)
+    ElseIf Not m_target Is Nothing Then
+        GetSelectedText = m_target.SelText
+    Else
+        GetSelectedText = ""
+    End If
+End Function
+
+Public Sub InsertSnippet(ByVal prefix As String, Optional ByVal suffix As String = "")
+    If m_hSci <> 0 Then
+        ScintillaInsertSnippet m_hSci, prefix, suffix
+    ElseIf Not m_target Is Nothing Then
+        Dim selText As String
+        selText = m_target.SelText
+        If Len(selText) > 0 Then
+            m_target.SelText = prefix & selText & suffix
+        Else
+            Dim oldStart As Long
+            oldStart = m_target.SelStart
+            m_target.SelText = prefix & suffix
+            m_target.SelStart = oldStart + Len(prefix)
+        End If
+        m_target.SetFocus
+    End If
+End Sub
+
 Public Property Get WordWrap() As Boolean
     If m_hSci <> 0 Then
         WordWrap = (SendMessage(m_hSci, SCI_GETWRAPMODE, 0, 0) = SC_WRAP_WORD)
@@ -95,8 +132,13 @@ Public Property Let WordWrap(ByVal value As Boolean)
     If m_hSci <> 0 Then
         If value Then
             SendMessage m_hSci, SCI_SETWRAPMODE, SC_WRAP_WORD, 0
+            SendMessage m_hSci, SCI_SETWRAPVISUALFLAGS, SC_WRAPVISUALFLAG_END, 0
+            SendMessage m_hSci, SCI_SETWRAPINDENTMODE, SC_WRAPINDENT_SAME, 0
+            SendMessage m_hSci, SCI_SETHSCROLLBAR, 0, 0
         Else
             SendMessage m_hSci, SCI_SETWRAPMODE, SC_WRAP_NONE, 0
+            SendMessage m_hSci, SCI_SETWRAPVISUALFLAGS, 0, 0
+            SendMessage m_hSci, SCI_SETHSCROLLBAR, 1, 0
         End If
     End If
     If Not m_target Is Nothing Then
@@ -109,7 +151,7 @@ End Property
 ' Lifecycle
 Private Sub Class_Initialize()
     m_fallback = False
-    m_initialWordWrap = True
+    m_initialWordWrap = False
     m_wordWrapSet = False
 End Sub
 
@@ -177,11 +219,11 @@ Public Sub SetResizeTarget(ByVal target As Object, ByVal parentForm As Object)
 
         #If VBA7 Then
             m_hSci = CreateWindowExA(WS_EX_CLIENTEDGE, "Scintilla", vbNullString, _
-                WS_CHILD Or WS_VISIBLE Or WS_TABSTOP Or WS_CLIPCHILDREN Or WS_CLIPSIBLINGS, _
+                WS_CHILD Or WS_VISIBLE Or WS_TABSTOP Or WS_CLIPCHILDREN Or WS_CLIPSIBLINGS Or WS_VSCROLL Or WS_HSCROLL, _
                 x, y, w, h, m_hWndParent, 0, 0, 0)
         #Else
             m_hSci = CreateWindowExA(WS_EX_CLIENTEDGE, "Scintilla", vbNullString, _
-                WS_CHILD Or WS_VISIBLE Or WS_TABSTOP Or WS_CLIPCHILDREN Or WS_CLIPSIBLINGS, _
+                WS_CHILD Or WS_VISIBLE Or WS_TABSTOP Or WS_CLIPCHILDREN Or WS_CLIPSIBLINGS Or WS_VSCROLL Or WS_HSCROLL, _
                 x, y, w, h, m_hWndParent, 0, 0, 0)
         #End If
 
