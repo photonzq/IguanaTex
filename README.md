@@ -1,313 +1,241 @@
-# IguanaTex
+# IguanaTex (Scintilla Windows Edition)
 
-(C) [Jonathan Le Roux](https://www.jonathanleroux.org/) and Zvika Ben-Haim (Windows), [Tsung-Ju Chiang](https://github.com/tsung-ju) and Jonathan Le Roux (Mac)
+[![Fork of Jonathan-LeRoux/IguanaTex](https://img.shields.io/badge/Fork%20of-Jonathan--LeRoux%2FIguanaTex-blue.svg)](https://github.com/Jonathan-LeRoux/IguanaTex)
+[![Platform: Windows Only](https://img.shields.io/badge/Platform-Windows%20Only-0078D6.svg?logo=windows)](https://github.com/photonzq/IguanaTex)
+[![Scintilla: 5.5.x](https://img.shields.io/badge/Editor-Scintilla%205.5%20%2B%20Lexilla-darkgreen.svg)](https://www.scintilla.org/)
 
-IguanaTex is a PowerPoint add-in which allows you to insert LaTeX equations into your PowerPoint presentation on Windows and Mac. It is distributed completely for free, along with its source code.
+> [!IMPORTANT]
+> **Windows-Only Fork — macOS Abandoned**  
+> This fork is **strictly dedicated to Windows** and **completely abandons macOS support**. All Mac-specific components (`AppleScript/`, `IguanaTexHelper/`, `libIguanaTexHelper.dylib`, and Mac-specific VBA code paths) are deprecated in this fork.  
+> If you are on macOS, please use the original upstream repository at **[Jonathan-LeRoux/IguanaTex](https://github.com/Jonathan-LeRoux/IguanaTex)**.
 
-This repository hosts the source code in a form that can be easily tracked, shared, and discussed (the VBA code is exported using the [ExportVBA macro](https://github.com/Jonathan-LeRoux/IguanaTex/blob/master/ExportVBA.bas)).
+---
 
-The add-in file (.ppam) and its source version (.pptm) can be found in the [Releases](https://github.com/Jonathan-LeRoux/IguanaTex/releases).
+## Overview
 
-## Table of Contents
+**IguanaTex** is a popular PowerPoint add-in that lets you insert and edit LaTeX equations directly inside presentations.
 
-- [Scintilla Windows Edition (Gemini Enhanced)](#scintilla-windows-edition-gemini-enhanced)
-- [How to Compile & Deploy (Windows)](#how-to-compile--deploy-windows)
-- [System Requirements](#system-requirements)
-  - [Windows](#windows)
-  - [Mac](#mac)
-- [Download and Install](#download-and-install)
-  - [Windows](#windows)
-  - [Mac](#mac)
-    - [Automatic installation with Homebrew](#automatic-installation-with-homebrew)
-    - [Manual installation](#manual-installation)
-  - [Other installation settings](#other-installation-settings)
-- [Tips, Bugs, and Known Issues](#tips-bugs-and-known-issues)
-  - [What to do if something does not work, or does not work as you expected](#what-to-do-if-something-does-not-work-or-does-not-work-as-you-expected)
-  - [Debugging an issue](#debugging-an-issue)
-  - [Keyboard shortcuts](#keyboard-shortcuts)
-  - [Known Issues](#known-issues)
-- [Stay up to date: IguanaTex Google Group](#stay-up-to-date-iguanatex-google-group)
-- [License](#license)
-
-## Scintilla Windows Edition (Gemini Enhanced)
-
-> [!NOTE]
-> **Windows-Only Enhancement**: This version features an upgraded in-place code editor powered by **Scintilla 5.5.x** and **Lexilla**, developed with **Gemini (Antigravity)**. On macOS, IguanaTex continues to use its native `NSTextView` / MSForms editor without modification.
+While the original add-in uses a plain Microsoft Forms `TextBox` on Windows, **this fork replaces the editor with a fully featured Win32 Scintilla 5 editor** backed by **Lexilla**, complete with syntax highlighting, line numbers, bracket matching, and a dedicated LaTeX snippet & environment toolbar.
 
 ![IguanaTex Scintilla Editor Preview](scintilla_editor_preview.png)
 
-### Key Improvements
+---
 
-1. **Native Scintilla Editor Integration**:
-   - Replaces the standard MSForms TextBox with a native Win32 Scintilla editing control (`Scintilla.dll` + `Lexilla.dll`), supporting both 32-bit and 64-bit PowerPoint on Windows.
-   - **Line Numbering**: Dedicated, styled line-number margin with responsive gutter sizing.
-   - **Full LaTeX Syntax Highlighting**: Powered by Lexilla's LaTeX lexer:
-     - Commands (`\documentclass`, `\int`, `\frac`, etc.) in bold blue.
-     - Environment tags (`\begin{...}` and `\end{...}`) in bold dark cyan (`SCE_L_TAG` and `SCE_L_TAG2`).
-     - Inline math (`$...$`) and display math (`$$...$$`, `\[...\]`) in green.
-     - Command options (`[12pt]`, `[h!]`) in dark orange.
-     - Comments (`% ...`) in italic slate gray.
-     - Verbatim blocks and special LaTeX tokens (`&`, `^`, `_`, `~`) distinctly styled.
-   - **Interactive Bracket Matching**: Highlights matching pairs of braces `{}`, parentheses `()`, and brackets `[]` with a soft blue backdrop, and highlights mismatched braces in red.
-   - **Active Line Highlighting**: Subtle highlight on the line containing the caret.
-   - **Word Wrap & Ergonomics**:
-     - Word wrap defaults to **OFF**, allowing horizontal scrollbar navigation and natural newline/Enter behavior.
-     - Toggle word wrap anytime via the editor header button.
-     - Dynamic DPI scaling support.
+## Table of Contents
 
-2. **Snippet & Usability Toolbar**:
-   - **Quick Action Buttons**:
-     - `[eq*]`: Inserts `\begin{equation*}` ... `\end{equation*}`.
-     - `[align*]`: Inserts `\begin{align*}` ... `\end{align*}`.
-     - `[a/b]`: Inserts `\frac{}{}` (places caret in numerator, or denominator if text was selected).
-     - `[√]`: Inserts `\sqrt{}`.
-     - `[text]`: Inserts `\text{}`.
-     - `[$]` / `[$$]`: Inserts inline or display math delimiters.
-     - `[( )]` / `[{ }]`: Wraps or inserts parentheses/braces.
-   - **`Ω Symbols ▾` Dropdown**:
-     - Quick insertion of Greek lowercase/uppercase letters.
-     - Calculus & operator symbols: `\int`, `\iint`, `\oint`, `\sum`, `\prod`, `\partial`, `\nabla`, `\infty`, `\lim`, `\sup`, `\inf`, `\max`, `\min`.
-     - Relations (`\leq`, `\geq`, `\neq`, `\approx`, `\equiv`, etc.) and logic/set symbols (`\in`, `\subset`, `\cup`, `\cap`, `\forall`, `\exists`).
-     - Math fonts: `\mathbf{}`, `\mathcal{}`, `\mathbb{}`, `\mathrm{}`, `\bm{}`.
-   - **`{ } Envs ▾` Dropdown**:
-     - Full suite of environments: `equation*`, `equation`, `align*`, `align`, `aligned`, `gather*`, `gather`, `multline*`, `multline`, `cases`, `pmatrix`, `bmatrix`, `vmatrix`, `matrix`, `array`, `tabular`, `itemize`, `enumerate`.
-   - **Smart Selection-Wrapping**:
-     - When text is selected in the editor, selecting an environment or clicking a snippet wraps the selected text directly.
-     - When no text is selected, inserts a formatted multi-line template skeleton with alignment points and positions the caret inside.
-     - Scintilla editor retains visible selection and receives focus immediately after insertion.
+- [Editor Enhancements (Windows)](#editor-enhancements-windows)
+  - [1. Scintilla 5 + Lexilla Engine](#1-scintilla-5--lexilla-engine)
+  - [2. Full LaTeX Syntax Highlighting](#2-full-latex-syntax-highlighting)
+  - [3. Line Numbers & Caret Enhancements](#3-line-numbers--caret-enhancements)
+  - [4. Interactive Bracket Matching](#4-interactive-bracket-matching)
+  - [5. Word Wrap & Scrolling Ergonomics](#5-word-wrap--scrolling-ergonomics)
+  - [6. LaTeX Snippet & Environment Toolbar](#6-latex-snippet--environment-toolbar)
+- [Build Requirements & Process](#build-requirements--process)
+  - [Prerequisites](#prerequisites)
+  - [Repository Layout](#repository-layout)
+  - [How the Build Process Works](#how-the-build-process-works)
+  - [Running the Build](#running-the-build)
+  - [Loading the Add-In in PowerPoint](#loading-the-add-in-in-powerpoint)
+- [LaTeX & System Requirements (Windows)](#latex--system-requirements-windows)
+- [License & Credits](#license--credits)
 
 ---
 
-## How to Compile & Deploy (Windows)
+## Editor Enhancements (Windows)
 
-The VBA source code can be synced, compiled, and deployed into `.pptm` and `.ppam` add-in packages automatically using Python automation:
+### 1. Scintilla 5 + Lexilla Engine
+- Replaces the legacy MSForms `TextBox` with a native Win32 **Scintilla 5.5.x** control host (`Scintilla.dll`) powered by **Lexilla** (`Lexilla.dll`).
+- Full support for both **32-bit (x86)** and **64-bit (x64)** Microsoft PowerPoint installations.
+- Text is transparently handled using UTF-8 internally, preserving full character fidelity.
+
+### 2. Full LaTeX Syntax Highlighting
+Powered by Lexilla's LaTeX lexer and custom-tuned color schemes:
+- **Commands**: `\documentclass`, `\begin`, `\end`, `\frac`, `\sqrt`, `\int`, `\alpha`, etc. in **bold blue** (`RGB(0, 70, 210)`).
+- **Environments**: `{equation}`, `{align*}`, `{document}`, etc. both after `\begin` (`SCE_L_TAG`) and `\end` (`SCE_L_TAG2`) in **bold dark cyan** (`RGB(0, 130, 130)`).
+- **Inline Math**: `$...$` in **dark green** (`RGB(20, 128, 20)`).
+- **Display Math**: `$$...$$`, `\[...\]` in **bold forest green** (`RGB(0, 110, 0)`).
+- **Command Options**: Optional parameters like `[12pt]`, `[h!]` in **dark golden orange** (`RGB(160, 80, 0)`).
+- **Comments**: `% ...` in **italic slate gray** (`RGB(120, 130, 140)`).
+- **Special Symbols**: `&`, `^`, `_`, `~` in **crimson** (`RGB(180, 30, 30)`).
+- **Verbatim Text**: In **warm brown** (`RGB(130, 65, 10)`).
+- **Instant Colourisation**: Invokes `SCI_COLOURISE` on document loads so text is styled immediately.
+
+### 3. Line Numbers & Caret Enhancements
+- Dedicated line-number margin (Margin 0) styled with Consolas font and subtle separator gutter.
+- Subtle background highlighting on the active caret line (`RGB(246, 248, 254)`).
+- 2px wide blinking caret for high visibility.
+
+### 4. Interactive Bracket Matching
+- Automatic bracket pair detection via Win32 timer:
+  - Matching pairs of `{ }`, `( )`, and `[ ]` are highlighted with a soft blue backdrop (`RGB(190, 225, 255)`).
+  - Unmatched or orphaned brackets are highlighted in soft red (`RGB(255, 200, 200)`).
+
+### 5. Word Wrap & Scrolling Ergonomics
+- Word wrap defaults to **OFF**, allowing natural horizontal scrolling, fixed line indentation, and standard Enter key newline behaviors.
+- One-click toggle button on the editor header allows switching word wrap on/off on the fly.
+- Horizontal and vertical Win32 scrollbars are fully supported.
+
+### 6. LaTeX Snippet & Environment Toolbar
+Directly above the editor sits an ergonomic snippet toolbar:
+- **One-Click Insert Buttons**:
+  - `[eq*]` : Inserts `\begin{equation*}` ... `\end{equation*}` block.
+  - `[align*]` : Inserts `\begin{align*}` ... `\end{align*}` block.
+  - `[a/b]` : Inserts `\frac{}{}` (places caret in numerator, or wraps selected text).
+  - `[√]` : Inserts `\sqrt{}`.
+  - `[text]` : Inserts `\text{}`.
+  - `[$]` : Inserts inline math delimiters `$...$`.
+  - `[$$]` : Inserts display math block `$$...$$`.
+  - `[( )]` : Wraps selection or inserts parentheses `()`.
+  - `[{ }]` : Wraps selection or inserts curly braces `{}`.
+- **`Ω Symbols ▾` Dropdown**:
+  - Greek letters (lowercase and uppercase: `\alpha` through `\Omega`).
+  - Calculus & operators: `\int`, `\iint`, `\oint`, `\sum`, `\prod`, `\partial`, `\nabla`, `\infty`, `\lim`, `\sup`, `\inf`, `\max`, `\min`.
+  - Relations & logic: `\leq`, `\geq`, `\neq`, `\approx`, `\equiv`, `\pm`, `\times`, `\in`, `\subset`, `\cup`, `\cap`, `\forall`, `\exists`, arrows.
+  - Math fonts: `\mathbf`, `\mathcal`, `\mathbb`, `\mathrm`, `\bm`.
+- **`{ } Envs ▾` Dropdown**:
+  - Quick insertion of environments: `equation*`, `equation`, `align*`, `align`, `aligned`, `gather*`, `gather`, `multline*`, `multline`, `cases`, `pmatrix`, `bmatrix`, `vmatrix`, `matrix`, `array`, `tabular`, `itemize`, `enumerate`.
+- **Smart Selection Wrapping**:
+  - If text is highlighted in the editor, clicking a snippet button or choosing an environment wraps the selected text directly.
+  - If no text is selected, a pre-formatted multi-line skeleton with alignment points (`&`, `\\`) is inserted and the caret is positioned inside.
+
+---
+
+## Build Requirements & Process
+
+Because PowerPoint add-ins (`.ppam`) are binary zip containers with an embedded compiled VBA storage stream (`ppt/vbaProject.bin`), updating VBA source files in Git requires compiling and re-packaging. This repository includes an automated build pipeline ([`build.py`](build.py)) to handle this in one command.
 
 ### Prerequisites
-- Windows 10/11 with Microsoft PowerPoint installed (32-bit or 64-bit).
-- Python 3.10+ (e.g. Anaconda base Python) with `pywin32` and `Pillow`:
-  ```powershell
-  pip install pywin32 pillow
-  ```
 
-### Directory Layout
+1. **Operating System**: Windows 10 or Windows 11.
+2. **Microsoft PowerPoint**: Installed on your system (Office 365, PowerPoint 2016, 2019, or 2021; either 32-bit or 64-bit).
+3. **Python 3.10+**: (e.g. Anaconda base Python or standard python.org installation).
+4. **Python Dependencies**:
+   ```powershell
+   pip install pywin32 pillow
+   ```
+5. **PowerPoint Trust Center Settings**:
+   - Open PowerPoint > **File** > **Options** > **Trust Center** > **Trust Center Settings...**.
+   - Under **Macro Settings**, check:
+     - **Trust access to the VBA project object model** (required so Python COM automation can update and compile VBA modules).
+
+### Repository Layout
+
 ```text
 IguanaTex/
-├── LatexForm.frm            # UserForm source code (includes snippet toolbar)
-├── TextWindow.cls           # Scintilla wrapper control class
-├── ScintillaConstants.bas   # Win32 API, Scintilla messages, styles, & helpers
-├── Macros.bas               # Add-in entry points and ribbon handlers
-├── build.py                 # Automated sync, compile, and deploy script
+├── LatexForm.frm            # Main editor UserForm code (snippet toolbar & Scintilla container)
+├── LatexForm.frx            # UserForm binary resource (control properties & icons)
+├── TextWindow.cls           # Scintilla wrapper class (Win32 creation, sizing, UTF-8 text)
+├── TextWindowFont.cls       # Scintilla font size and styling wrapper
+├── ScintillaConstants.bas   # Win32 API declarations, Scintilla messages, lexer styles, timers
+├── Macros.bas               # Add-in entry points and ribbon action handlers
+├── Defaults.bas             # Default paths and LaTeX templates
+├── build.py                 # Automated sync, compile, and deploy pipeline
 ├── lib/
-│   ├── x86/                 # 32-bit Scintilla.dll & Lexilla.dll
-│   └── x64/                 # 64-bit Scintilla.dll & Lexilla.dll
+│   ├── x86/                 # 32-bit Scintilla.dll & Lexilla.dll (for 32-bit Office)
+│   └── x64/                 # 64-bit Scintilla.dll & Lexilla.dll (for 64-bit Office)
 └── scintilla_editor_preview.png
 ```
 
-### One-Step Build & Deploy
-Run `build.py` using Python:
-```powershell
-python build.py
-# Or with Anaconda Python:
-& "C:\ProgramData\anaconda3\python.exe" build.py
+### How the Build Process Works
+
+When you run [`build.py`](build.py), the script performs the following 5 automated steps:
+
+```
+[1/5] Ingest Source Code
+      └── Reads ScintillaConstants.bas, TextWindow.cls, LatexForm.frm, Macros.bas.
+          Strips attribute headers and injects clean code modules into IguanaTex_Debug.pptm.
+
+[2/5] In-Process VBE Compilation
+      └── Invokes the PowerPoint Visual Basic Editor compile command (ID 578) via COM.
+          Verifies 0 syntax errors, 0 ambiguous names, and 0 type mismatches.
+
+[3/5] Extract vbaProject.bin
+      └── Extracts the compiled ppt/vbaProject.bin binary stream from the PPTM zip archive.
+
+[4/5] Package & Inject
+      └── Injects the compiled binary stream into:
+          • IguanaTex_Dev.pptm (for local development/debugging)
+          • IguanaTex_Scintilla.ppam (the add-in package)
+          • %APPDATA%\Microsoft\AddIns\IguanaTex_Scintilla.ppam (installed add-in)
+
+[5/5] Deploy DLLs
+      └── Copies lib\ (x86 and x64 Scintilla.dll / Lexilla.dll) alongside the .ppam
+          in %APPDATA%\Microsoft\AddIns\lib\ so PowerPoint loads the matching architecture.
 ```
 
-### What `build.py` Does:
-1. **Syncs Source Code**: Reads `ScintillaConstants.bas`, `TextWindow.cls`, and `LatexForm.frm` (stripping header attributes) and injects them directly into the PowerPoint presentation's `VBProject`.
-2. **Automated VBE Compile**: Executes the PowerPoint VBA Compiler command bar control (`ID 578`) via COM to ensure zero compile or syntax errors.
-3. **Packages `.ppam`**: Extracts the compiled `ppt/vbaProject.bin` stream and injects it into `IguanaTex_Scintilla.ppam`.
-4. **Installs Add-In**: Copies `IguanaTex_Scintilla.ppam` directly to the PowerPoint Add-Ins directory:
-   ```text
-   %APPDATA%\Microsoft\AddIns\IguanaTex_Scintilla.ppam
-   ```
-5. **Deploys DLLs**: Copies the `lib\` directory containing both 32-bit and 64-bit Scintilla and Lexilla binaries alongside the add-in:
-   ```text
-   %APPDATA%\Microsoft\AddIns\lib\x86\Scintilla.dll
-   %APPDATA%\Microsoft\AddIns\lib\x86\Lexilla.dll
-   %APPDATA%\Microsoft\AddIns\lib\x64\Scintilla.dll
-   %APPDATA%\Microsoft\AddIns\lib\x64\Lexilla.dll
-   ```
+### Running the Build
+
+Run the build script from PowerShell or Command Prompt:
+
+```powershell
+# Using Anaconda Python:
+& "C:\ProgramData\anaconda3\python.exe" build.py
+
+# Or using standard Python:
+python build.py
+```
+
+Expected output:
+```text
+============================================================
+  IguanaTex Scintilla Build & Deployment
+============================================================
+
+[1/5] Updating Master PPTM VBA components...
+  -> Updating ScintillaConstants...
+  -> Updating TextWindow...
+  -> Updating LatexForm...
+  -> Updating Macros...
+
+[2/5] Compiling VBA project via VBE CommandBar (ID 578)...
+  -> VBE Compile executed cleanly (0 syntax/type errors).
+  -> Master PPTM saved.
+
+[3/5] Extracting compiled vbaProject.bin...
+
+[4/5] Injecting into Add-In packages (.ppam)...
+  -> Updated C:\Users\zqiu\Desktop\IguanaTex_Scintilla\IguanaTex_Dev.pptm
+  -> Updated C:\Users\zqiu\Desktop\IguanaTex_Scintilla\IguanaTex_Scintilla.ppam
+  -> Deployed to C:\Users\zqiu\AppData\Roaming\Microsoft\AddIns\IguanaTex_Scintilla.ppam
+
+[5/5] Syncing Scintilla and Lexilla DLLs...
+  -> Synced DLLs to C:\Users\zqiu\Desktop\IguanaTex_Scintilla\lib
+  -> Synced DLLs to C:\Users\zqiu\AppData\Roaming\Microsoft\AddIns\lib
+
+============================================================
+  BUILD COMPLETE: All targets successfully updated!
+============================================================
+```
 
 ### Loading the Add-In in PowerPoint
-1. If PowerPoint is running, **close and restart PowerPoint** to ensure the new `.ppam` is loaded into memory.
-2. In PowerPoint, go to **File** > **Options** > **Add-Ins**.
+
+1. If PowerPoint was already running, **close and reopen PowerPoint** so that PowerPoint reloads the `.ppam` from disk.
+2. In PowerPoint, navigate to:
+   **File** > **Options** > **Add-Ins**.
 3. In the **Manage** dropdown at the bottom, select **PowerPoint Add-ins** and click **Go...**.
-4. Check **IguanaTex_Scintilla** (or click **Add New...** and choose `%APPDATA%\Microsoft\AddIns\IguanaTex_Scintilla.ppam`).
-5. Open any presentation and click **New LaTeX Display** in the IguanaTex ribbon tab to enjoy the new editor!
+4. Check **IguanaTex_Scintilla** (or click **Add New...**, browse to `%APPDATA%\Microsoft\AddIns\IguanaTex_Scintilla.ppam`, and click **Open**).
+5. Open any presentation and click **New LaTeX Equation** from the **IguanaTex** tab in the ribbon.
 
 ---
 
-## System Requirements
+## LaTeX & System Requirements (Windows)
 
-### Windows
+To compile and render LaTeX equations into images or SVG shapes, you need:
 
-- OS: Windows 2000 or later (32- or 64-bit).
-- PowerPoint:
-  - IguanaTex has been tested with Office 365, Office 2019, Office 2021 (including LTSC version), PowerPoint 2003, 2010, 2013, 2016, 2019 (both 32 and 64 bit). It is likely to also work in PowerPoint 2000 and 2007.
-  - SVG support is available for Office 365 and recent retail versions of PowerPoint. Support is confirmed for PowerPoint 2021 at least for versions 2108 and above, and likely (although unconfirmed) for PowerPoint 2019 and maybe even PowerPoint 2016 for the same versions. Note that volume licensed versions, which are at version 1808 as of August 2023, do not support SVG conversion to Shape, which is required by IguanaTex.
-- LaTeX: [TeXLive](https://www.tug.org/texlive/) or [MiKTeX](http://miktex.org/)
-- [GhostScript](http://www.ghostscript.com/download/gsdnld.html) (if the latest version raises issues, try gs9.26)
-- [ImageMagick](http://www.imagemagick.org/script/download.php#windows)
-- (Optional) [TeX2img](https://github.com/abenori/TeX2img), used for Shape output via EMF ([Download](https://www.ms.u-tokyo.ac.jp/~abenori/soft/index.html#TEX2IMG))
-- (Optional) [LaTeXiT-metadata](https://github.com/LaTeXiT-metadata/LaTeXiT-metadata-Win), used to convert displays generated with [LaTeXiT](https://www.chachatelier.fr/latexit/) on Mac into IguanaTex displays
+1. **LaTeX Distribution**: [TeX Live](https://www.tug.org/texlive/) or [MiKTeX](https://miktex.org/).
+2. **Ghostscript**: [Ghostscript for Windows](https://www.ghostscript.com/download/gsdnld.html) (e.g. `gswin32c.exe` or `gswin64c.exe`).
+3. **ImageMagick**: [ImageMagick for Windows](https://imagemagick.org/script/download.php#windows) (`magick.exe`).
+4. **(Optional for EMF vector output)**: [TeX2img](https://github.com/abenori/TeX2img) (`TeX2imgc.exe`).
+5. **Configuration**:
+   - In PowerPoint, click **Main Settings** on the IguanaTex ribbon.
+   - Set the paths to your Ghostscript executable (`gswin64c.exe` or `gswin32c.exe`), ImageMagick (`magick.exe`), and your preferred temp folder (e.g., `C:\Temp\`).
 
-### Mac
+---
 
-- Intel or Apple Silicon Mac
-- PowerPoint for Mac:
-  - Office 365, Office 2021 (including LTSC version), Powerpoint 2019, PowerPoint 2016 (Version 16.16.7 190210 or later)
-  - SVG support is available for Office 365 and recent retail versions of PowerPoint, including 2019 and 2021. Note that volume licensed (LTSC) versions do not support SVG conversion to Shape, which is required by IguanaTex.
-- [MacTeX](https://www.tug.org/mactex/)
-- Ghostscript library: For SVG/Shape support, download and install [Ghostscript-10.04.0.pkg](https://pages.uoregon.edu/koch/Ghostscript-10.04.0.pkg) and [Ghostscript-10.04.0-Extras.pkg](https://pages.uoregon.edu/koch/Ghostscript-10.04.0-Extras.pkg) (Once MacTeX 2025 is released, this should no longer be necessary). [More details about SVG support via `dvisvgm` in MacTeX](https://tug.org/mactex/aboutdvisvgm.html).
-- (Optional) [LaTeXiT-metadata](https://github.com/LaTeXiT-metadata/LaTeXiT-metadata-MacOS), used to convert [LaTeXiT](https://www.chachatelier.fr/latexit/) displays into IguanaTex displays
+## License & Credits
 
-
-## Download and Install
-
-### Windows Installation
-
-1. **Download the .ppam add-in** file from this repository's [Releases page](https://github.com/Jonathan-LeRoux/IguanaTex/releases) and save it in a [Trusted Location](https://learn.microsoft.com/en-us/DeployOffice/security/trusted-locations) (see [this Microsoft article](https://learn.microsoft.com/en-us/DeployOffice/security/internet-macros-blocked#guidance-on-allowing-vba-macros-to-run-in-files-you-trust)), such as `%appdata%\Microsoft\Addins` (i.e., `C:\Users\user_name\Appdata\Roaming\Microsoft\Addins`). If you get a malware warning, try "Trust"-ing the file (Right-Click > Properties). You may have better luck downloading the `.pptm` file, Trusting it, opening it in PowerPoint, and using "Save As" to create your own `.ppam` file.
-2. **Load the add-in**: in "File" > "Options" > "Add-Ins" > "Manage:" (lower part of the window), choose "PowerPoint Add-Ins" in the selection box. Then press "Go...", then click  "Add New", select the `.ppam` file in the folder where you downloaded it, then "Close" (if you downloaded the .pptm source and saved it as `.ppam`, it will be in the default Add-In folder).
-3. **Create and set a temporary file folder**: IguanaTex needs access to a folder with read/write permissions to store temporary files.
-   - The default is "C:\Temp\". If you have write permissions under "C:\", create the folder "C:\Temp\". You're all set.
-   - If you cannot create this folder, choose or create a folder with write permission at any other location. In the IguanaTex tab, choose "Main Settings" and put the path to the folder of your choice. You can also use a relative path under the presentation's folder (e.g., ".\" for the presentation folder itself).
-4. **Install and set path to GhostScript and ImageMagick** (required for Picture outputs, except if using "Latex (DVI)" engine):
-   - Needed to convert intermediate PDF files into PNG before insertion into PowerPoint as a Picture object. In the Picture generation process, all LaTeX engines except "Latex (DVI)" output PDF files. Even when generating a Shape, it is often better to first generate a Picture then convert to Shape: Picture generation is faster and more robust, so it can be convenient to work on a display in Picture mode then do a final conversion to Shape, preserving the size.
-   - Set the **full** path to `gswin32c.exe` or `gswin64c.exe` (note the "`c`"!) and to ImageMagick's magick.exe in the "Main Settings" window.
-   - Best way to make sure the path is correct is to use the "..." button next to each path and navigate to the correct file.
-   - Some default paths include `%USERPROFILE%`. It is recommended to click on "..." to make sure the path gets properly converted to the actual user profile path.
-5. (Optional) **Install and set path to TeX2img**:
-   - Only needed for vector graphics support via EMF (compared to SVG, pros of EMF are: available on all PowerPoint versions, fully modifiable shapes; cons: some displays randomly suffer from distortions)
-   - Download from [this link](https://www.ms.u-tokyo.ac.jp/~abenori/soft/index.html#TEX2IMG) (more details on TeX2img on their [Github repo](https://github.com/abenori/TeX2img))
-   - After unpacking TeX2img somewhere on your machine, run TeX2img.exe once to let it automatically set the various paths to latex/ghostscript, then set the **full** path to `TeX2imgc.exe` (note the "`c`"!) in the "Main Settings" window.
-6. (Optional) **Install LaTeXiT-metadata**:
-   - Needed to convert displays generated with [LaTeXiT](https://www.chachatelier.fr/latexit/) on Mac into IguanaTex displays
-   - Download [`LaTeXiT-metadata-Win.zip`](https://github.com/Jonathan-LeRoux/IguanaTex/releases/download/v1.60.3/LaTeXiT-metadata-Win.zip) from the Releases page, unzip, and set the path to `LaTeXiT-metadata.exe` in the "Main Settings" window.
-   - LaTeXiT-metadata was kindly prepared by Pierre Chatelier, [LaTeXiT](https://www.chachatelier.fr/latexit/)'s author, at my request. Many thanks to him!
-   - [Source code is now public](https://github.com/LaTeXiT-metadata/LaTeXiT-metadata-Win).
-
-### Mac Installation
-
-#### Automatic installation with Homebrew
-
-If you use Homebrew, installation is as simple as:
-
-```bash
-brew tap tsung-ju/iguanatexmac
-brew install --cask iguanatexmac latexit-metadata
-```
-
-Then follow **5. Verify that paths are set correctly** in the Manual installation instructions below.
-
-For more details (e.g., how to **upgrade** or **uninstall**), please see [Tsung-Ju's Homebrew instructions](https://github.com/tsung-ju/homebrew-iguanatexmac).
-
-Note that the Homebrew installation may fail on some organization-managed Macs with a restrictive `sudo` configuration (cf. [this issue](https://github.com/Jonathan-LeRoux/IguanaTex/issues/93)). In this case, please use the Manual installation instructions below.
-
-#### Manual installation
-
-1. **Download the "prebuilt files for Mac" zip** from this repository's [Releases page](https://github.com/Jonathan-LeRoux/IguanaTex/releases)  
-There are 3 files to install:
-   - `IguanaTex.scpt`: AppleScript file for handling file and folder access
-   - `libIguanaTexHelper.dylib`: library for creating native text views; source code included in the git repo, under "IguanaTexHelper/"
-   - `IguanaTex_v1_XX_Y.ppam`: main add-in file
-2. **Install `IguanaTex.scpt`**
-
-    ```bash
-    mkdir -p ~/Library/Application\ Scripts/com.microsoft.Powerpoint
-    cp ./IguanaTex.scpt ~/Library/Application\ Scripts/com.microsoft.Powerpoint/IguanaTex.scpt
-    ```
-
-3. **Install `libIguanaTexHelper.dylib`**
-
-    ```bash
-    sudo mkdir -p '/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized'
-    sudo cp ./libIguanaTexHelper.dylib '/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/libIguanaTexHelper.dylib'
-    ```
-
-4. **Load the add-in**: Start PowerPoint (restart if it was running when installing the dylib). From the menu bar, select Tools > PowerPoint Add-ins... > '+' , and choose `IguanaTex_v1_XX_Y.ppam`
-   - The first time you click on one of the add-in buttons, you may be notified that `libIguanaTexHelper.dylib` was blocked. Go to the Mac's Settings, then Security and Privacy, and click "Allow Anyway".
-
-5. **Verify that paths are set correctly**:
-   Click on "Main Settings" in the IguanaTex ribbon tab:
-   - Set the Temp folder used for file conversions in one of the following ways:
-     - (Recommended) The simplest is to let Iguanatex pick the Temp folder by selecting "Absolute" and leaving the path empty. The Temp folder will be inside the PowerPoint sandbox and everything will work without having to give permissions.
-     - (If needed) If you need the Temp folder to be a specific folder outside the sandbox, or if you'd rather it be relative to your PowerPoint presentation (e.g., because you are using specific macros in an external file), you will need to give access permission to that folder to IguanaTex. The best thing to do is to drag and drop that folder from the Finder on top of the PowerPoint application. This will allow you to give permission to the whole folder at least for the current session.
-   - Verify that the following paths are set correctly by clicking on each "..." button next to them. If the path is correct, this should take you to its location; otherwise, you'll need to navigate to the relevant path. The defaults should match the MacTeX installation locations, but your installation may differ.
-     - GhostScript
-     - LaTeX binaries
-     - libgs.dylib (used in SVG conversions; this should only be needed with older versions of MacTeX; leave empty if you get an error, which may happen if you use MacPorts' TeXLive for example)
-     
-     If you cannot find them or if IguanaTex complains that a command did not return, open a terminal and use `locate gs`, `locate pdflatex`, and `locate libgs`.
-
-7. (Optional) **Install LaTeXiT-metadata**:
-   - Needed to convert displays generated with [LaTeXiT](https://www.chachatelier.fr/latexit/) on Mac into IguanaTex displays
-   - Download [`LaTeXiT-metadata-macos`](https://github.com/Jonathan-LeRoux/IguanaTex/releases/download/v1.60.3/LaTeXiT-metadata-macos) from the Releases page, add executable permission, and either set the path to its location in the "Main Settings" window or copy it to the secure add-in folder:  
-  `chmod 755 ./LaTeXiT-metadata-macos`  
-  `sudo cp ./LaTeXiT-metadata-macos '/Library/Application Support/Microsoft/Office365/User Content.localized/Add-Ins.localized/'`
-   - The first time LaTeXiT-metadata-macos is called by IguanaTex, Mac OS may block it. Go to the Mac's Settings, then Security and Privacy, and click "Allow Anyway".
-   - The executable was compiled on Mac OS 10.13 but should work on all versions. Please let me know if you have any issue.
-   - LaTeXiT-metadata was kindly prepared by Pierre Chatelier, [LaTeXiT](https://www.chachatelier.fr/latexit/)'s author, at my request. Many thanks to him!
-   - [Source code is now public](https://github.com/LaTeXiT-metadata/LaTeXiT-metadata-MacOS).
-
-### Other installation settings
-
-- If you have a non-standard LaTeX installation, you can specify in Main Settings the folder in which the executables are included, or more generally a prefix to be added to all commands (e.g., `wsl -e` for a LaTeX installation under the Windows Subsystem for Linux).
-- If you plan to use Tectonic:
-  - if you are specifying a path or prefix for the LaTeX installation as explained above, that will be used for the Tectonic executable as well, so please make sure Tectonic is under that path or that it can be called with the specified prefix;
-  - if you are not specifying any path or prefix, then the Tectonic executable needs to be on your PATH.
-- If you would like to have the option of using an external editor, e.g., when debugging LaTeX source code, you can specify the path to that editor in Main Settings. If you would like to use that editor by default over the IguanaTex edit window, check the "use as default" checkbox.
-
-## Tips, Bugs, and Known Issues
-
-### What to do if something does not work, or does not work as you expected
-
-Most issues originate from some steps of the installation process described above not being followed: please double-check you went through all the steps. A reboot also often helps after a first installation.
-
-If you are having trouble installing or using IguanaTex, please see the [Frequently Asked Questions](https://www.jonathanleroux.org/software/iguanatex/faq.html) and check the [Issues](https://github.com/Jonathan-LeRoux/IguanaTex/issues?q=is%3Aissue) on this repo.
-
-### Debugging an issue
-
-When running into an issue while trying to generate a display, the first thing to do is to check the "Debug" box in the Editor window prior to clicking "Generate". This will step through the process of generating the display, so that we can know where the error occurred, and it will give the option to copy each command so that they can be run in a Terminal or Command Prompt.
-
-If this does not solve the issue, or the issue does not occur during the generation process, the next step is to try to debug in the VBA Editor. To do so:
-
-- open the source `.pptm` file in PowerPoint.
-- open the VBA Editor (`Alt+F11` on Windows, `Tools > Macro > Visual Basic Editor` on Mac).
-- search for "Macros" under "Module" in the exploration pane on the left.
-- place a breakpoint, for example at Line 7 (`Load LatexForm` under `NewLatexEquation()`) by clicking in the margin.
-- Launch the display generation process:
-  - on Windows, click on the "New LaTeX Display" button in the IguanaTex ribbon (if the add-in is loaded, you will likely have two IguanaTex tabs in the ribbon, one for the loaded add-in and the other for the `.pptm` file: just try one, and if the IguanaTex window appears without hitting the breakpoint, try the other), or in the VBA Editor click `Tools >  Macros...` and select `NewLatexEquation` and `Run`.
-  - on Mac, clicking on the buttons in the ribbon does not work for `.pptm` files, so instead click `Tools > Macro > Macros...` and select `NewLatexEquation` and `Run`.
-- The code will stop at the breakpoint.
-- Step Over (Shift+F8 on Windows, Shift+⌘+O on Mac) until hitting the bug. If the bug occurs on a line calling another function, you can run again and then Step Into (F8 on Windows, Shift+⌘+I on Mac) when you reach that line.
-- Eventually, you'll reach the actual line causing the bug. Now, either try to fix it, or open an issue.
-
-### Keyboard shortcuts
-
-Accelerator keys (i.e., keyboard shortcuts): many of IguanaTex's commands ("Generate", "Cancel", etc) can be accessed by using a combination of modifier keys and a single letter. Look for the underlined letter in the corresponding button's text/label.
-
-- Windows: Alt + letter. For example, instead of clicking on the "<ins>G</ins>enerate" button, you can use `Alt + g`. (This is the standard Office behavior on Windows)
-- Mac: Ctrl + Cmd + letter. For example, instead of clicking on the "<ins>G</ins>enerate" button, you can use `Ctrl + ⌘ + g`. (Accelerator keys are not available in the standard Office for Mac, this was specially coded by Tsung-Ju for IguanaTex)
-
-### Known Issues
-
-- "Picture" displays created on Mac (which are inserted PDFs) appear cropped on Windows ([Issue #32](https://github.com/Jonathan-LeRoux/IguanaTex/issues/32)). Regenerating them on Windows fixes the issue. This seems to be a bug with the way PowerPoint handles some PDFs on Mac, internally storing them as EMF files. The PDFs created by LaTeXiT do not have that issue, however, so there may be a way to circumvent this bug in a future version of IguanaTex.
-- IguanaTex macros cannot be added to the Quick Access Toolbar on Mac ([Issue #23](https://github.com/Jonathan-LeRoux/IguanaTex/issues/23)): this is a [known bug](https://answers.microsoft.com/en-us/msoffice/forum/all/can-add-in-commands-be-added-to-the-quick-access/6872187f-3c17-40ee-8620-80a4068edc82) on which Microsoft is allegedly working, although there has been no progress for multiple years.
-- There may be some scaling issues when changing the format of a file (Picture <-> Shape, or even within the various SVG and EMF Shape formats). The best way to handle this is to use the "Convert to Shape"/"Convert to Picture" functions, which regenerate the display in the desired format while keeping the size fixed. One can then further modify the content if needed, and the scaling will be correct.
-- For Shape (i.e., vector graphics) displays, the default "SVG via DVI w/ dvisvgm" is recommended because of issues sometimes observed with other modes:
-  - Some displays obtained via "EMF w/ TeX2img" or "EMF w/ pdfiumdraw" appear distorted. This is a PowerPoint bug that sometimes occurs when ungrouping an EMF file into a Shape object.
-  - Some displays obtained with "SVG via PDF w/ dvisvgm" have symbols or parts of symbol missing. This is because certain lines are represented in PDF by open paths with a certain line width, instead of closed paths, and are thus handled differently by PowerPoint when converting to a Shape object. See [this discussion](https://github.com/mgieseki/dvisvgm/issues/166) for more details.
-
-## Stay up to date: IguanaTex Google Group
-
-To be informed of the release of new versions, you can subscribe to the [IguanaTex Google Group](https://groups.google.com/d/forum/iguanatex).
-
-## License
-
-[![CC BY 3.0][cc-by-image]][cc-by]
-
-This work is licensed under a
-[Creative Commons Attribution 3.0 Unported License][cc-by].
-
-[cc-by]: http://creativecommons.org/licenses/by/3.0/
-[cc-by-image]: https://i.creativecommons.org/l/by/3.0/88x31.png
-[cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%203.0-lightgrey.svg
+- Original IguanaTex: (C) [Jonathan Le Roux](https://www.jonathanleroux.org/) and Zvika Ben-Haim.
+- Scintilla Windows Edition enhancements: Developed by [photonzq](https://github.com/photonzq) with Gemini (Antigravity).
+- Scintilla is (C) Neil Hodgson and contributors (HPND License).
+- Lexilla is (C) Neil Hodgson and contributors (HPND License).
+- Licensed under the [Creative Commons Attribution 3.0 Unported License](http://creativecommons.org/licenses/by/3.0/).
